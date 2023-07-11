@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TwinZMultiChat.MainPage"
+             xmlns:TM="clr-namespace:TwinZMultiChat"
+             x:DataType="TM:UiData" >            
+
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Labels and Input Boxes -->
+        <StackLayout Grid.Row="0" Grid.Column="2" Orientation="Horizontal">
+            <Label Text="Discord Bot Token" VerticalOptions="Center" />
+            <Entry x:Name="DiscordBotTokenBox" HorizontalOptions="FillAndExpand" 
+                   TextChanged="DiscordBotTokenBox_TextChanged" Text="{Binding DiscordBotToken}" />
+        </StackLayout>
+        <StackLayout Grid.Row="1" Grid.Column="2" Orientation="Horizontal">
+            <Label Text="Discord Channel ID" VerticalOptions="Center" />
+            <Entry x:Name="DiscordChannelIDBox" HorizontalOptions="FillAndExpand" 
+                   TextChanged="DiscordChannelIDBox_TextChanged" Text="{Binding DiscordChannelID}" />
+        </StackLayout>
+        <StackLayout Grid.Row="2" Grid.Column="2" Orientation="Horizontal">
+            <Label Text="YouTube Application Name" VerticalOptions="Center" />
+            <Entry x:Name="YouTubeApplicationNameBox" HorizontalOptions="FillAndExpand" 
+                   TextChanged="YouTubeApplicationNameBox_TextChanged" Text="{Binding YouTubeApplicationName}"/>
+        </StackLayout>
+        <StackLayout Grid.Row="3" Grid.Column="2" Orientation="Horizontal">
+            <Label Text="Twitch Chat ID" VerticalOptions="Center" />
+            <Entry x:Name="TwitchChatIDBox" HorizontalOptions="FillAndExpand" 
+           TextChanged="TwitchChatIDBox_TextChanged" Text="{Binding TwitchChatID}"/>
+        </StackLayout>
+        <StackLayout Grid.Row="4" Grid.Column="2" Orientation="Horizontal">
+            <Label Text="Twitch Client ID" VerticalOptions="Center" />
+            <Entry x:Name="TwitchClientIDBox" HorizontalOptions="FillAndExpand"
+                   TextChanged="TwitchClientIDBox_TextChanged" Text="{Binding TwitchClientID}"/>
+        </StackLayout>
+        <StackLayout Grid.Row="5" Grid.Column="2" Orientation="Horizontal">
+            <Label Text="Twitch Client Secret" VerticalOptions="Center" />
+            <Entry x:Name="TwitchClientSecretBox" HorizontalOptions="FillAndExpand" 
+                   TextChanged="TwitchClientSecretBox_TextChanged" Text="{Binding TwitchClientSecret}"/>
+        </StackLayout>
+
+        <!-- Checkboxes -->
+        <StackLayout Grid.Row="6" Grid.Column="2" Orientation="Horizontal">
+            <CheckBox x:Name="DiscordCheckBox" VerticalOptions="Center" CheckedChanged="DiscordCheckBox_CheckedChanged" IsChecked="{Binding EnableDiscord}"/>
+            <Label Text="Discord" VerticalOptions="Center" />
+
+            <CheckBox x:Name="YouTubeCheckBox" VerticalOptions="Center" CheckedChanged="YouTubeCheckBox_CheckedChanged" IsChecked="{Binding EnableYouTube}"/>
+            <Label Text="YouTube" VerticalOptions="Center" />
+
+            <CheckBox x:Name="TwitchCheckBox" VerticalOptions="Center" CheckedChanged="TwitchCheckBox_CheckedChanged" IsChecked="{Binding EnableTwitch}"/>
+            <Label Text="Twitch" VerticalOptions="Center" />
+
+            <CheckBox x:Name="KickCheckBox" VerticalOptions="Center" CheckedChanged="KickCheckBox_CheckedChanged" IsVisible="false" IsChecked="{Binding EnableKick}"/>
+            <Label Text="Kick" VerticalOptions="Center" IsVisible="false"/>
+        </StackLayout>
+
+        <!-- Bot Command/Response Section -->
+        <StackLayout Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"  Margin="0,20,10,0">
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Bot Command: !" VerticalOptions="Center" />
+                <Entry x:Name="botCommandBox" HorizontalOptions="FillAndExpand" Text="{Binding BotCommand}" />
+            </StackLayout>
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Bot Response: " VerticalOptions="Center" />
+                <Entry x:Name="botResponseBox" HorizontalOptions="FillAndExpand" Text="{Binding BotResponse}" />
+            </StackLayout>
+            <Button Text="Save" Clicked="SaveBotCommand_Clicked" HorizontalOptions="Start" Margin="0,10,0,0" />
+        </StackLayout>
+
+        <ScrollView Grid.Row="4" Grid.RowSpan="6" Grid.Column="1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" VerticalScrollBarVisibility="Always">
+            <StackLayout x:Name="tableLayout" Padding="10" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" >
+                <CollectionView ItemsSource="{Binding BotCommands}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <StackLayout Margin="0,0,0,10" >
+                                <Label FontAttributes="Bold" />
+                                <Label />
+                            </StackLayout>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" />
+                    </CollectionView.ItemsLayout>
+                </CollectionView>
+            </StackLayout>
+        </ScrollView>
+
+
+        <!-- Buttons -->
+        <StackLayout Grid.Row="8" Grid.Column="2" Orientation="Horizontal" VerticalOptions="End">
+            <Button Text="Save" Style="{StaticResource DarkButtonStyle}" Clicked="OnSaveBtn_Clicked"/>
+            <Button Text="Reset" Style="{StaticResource DarkButtonStyle}" Clicked="OnResetBtn_Clicked"/>
+        </StackLayout>
+        <StackLayout Grid.Row="10" Grid.Column="2" Orientation="Horizontal" VerticalOptions="StartAndExpand" Visual="Default">
+            <Button Text="Start" Style="{StaticResource DarkButtonStyle}" Clicked="OnStartBtn_Clicked"/>
+            <Button Text="Stop" Style="{StaticResource DarkButtonStyle}" Clicked="OnStopBtn_Clicked" />
+        </StackLayout>
+
+        <!-- Chat Log -->
+        <ScrollView Grid.Row="0" Grid.RowSpan="9" Grid.Column="0" VerticalScrollBarVisibility="Always" Margin="0,0,10,0" >
+            <Editor x:Name="LogBox" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"
+                IsReadOnly="True" VerticalTextAlignment="Start" HorizontalTextAlignment="Start" FontSize="Medium" FlowDirection="LeftToRight"  />
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>
