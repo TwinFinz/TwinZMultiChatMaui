@@ -237,7 +237,6 @@ ClientBin/
 *.dbproj.schemaview
 *.jfm
 *.pfx
-TwinZMultiChat.csproj
 *.keystore
 *.publishsettings
 orleans.codegen.cs
