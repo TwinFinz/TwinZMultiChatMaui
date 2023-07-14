@@ -82,7 +82,7 @@ namespace TwinZMultiChat.Utilities
 
             _client!.Connected += OnConnected;
             _client!.Disconnected += OnDisconnected;
-            _client.Log += WriteLog; // Optional: Handle logging events
+            //_client.Log += WriteLog; // Optional: Handle logging events
         }
 
         public async Task DisconnectAsync()

@@ -33,7 +33,7 @@
 		<DefaultLanguage>en</DefaultLanguage>
 		<Company>TwinLunarStarZ</Company>
 		<Title>$(AssemblyName)</Title>
-		<ApplicationIcon>Icon.ico</ApplicationIcon>
+		<ApplicationIcon>Resources\AppIcon\icon.ico</ApplicationIcon>
 		<PackageCertificateThumbprint></PackageCertificateThumbprint>
 		<AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
 	</PropertyGroup>
@@ -88,7 +88,7 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiIcon Include="Resources\AppIcon\icon.ico" ForegroundFile="Resources\AppIcon\icon.ico" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -107,10 +107,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Include="Icon.ico" />
-	</ItemGroup>
-
-	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Maui" Version="5.2.0" />
 		<PackageReference Include="Discord.Net" Version="3.11.0" />
 		<PackageReference Include="Google.Apis" Version="1.61.0" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.61.0" />

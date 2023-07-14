@@ -116,6 +116,7 @@
 
         <!-- Buttons -->
         <StackLayout Grid.Row="8" Grid.Column="2" Orientation="Horizontal" VerticalOptions="End">
+            <Button Text="License" Style="{StaticResource DarkButtonStyle}" Clicked="OnLicenseBtn_Clicked"/>
             <Button Text="Save" Style="{StaticResource DarkButtonStyle}" Clicked="OnSaveBtn_Clicked"/>
             <Button Text="Reset" Style="{StaticResource DarkButtonStyle}" Clicked="OnResetBtn_Clicked"/>
         </StackLayout>
