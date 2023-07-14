@@ -111,6 +111,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Maui" Version="5.2.0" />
 		<PackageReference Include="Discord.Net" Version="3.11.0" />
 		<PackageReference Include="Google.Apis" Version="1.61.0" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.61.0" />
