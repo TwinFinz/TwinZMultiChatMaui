@@ -241,7 +241,6 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
-
 # Android Studio generated files and folders
 captures/
 .externalNativeBuild/
@@ -387,4 +386,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/TwinZMultiChat/TwinZMultiChat.csproj
 /TwinZMultiChat/TwinZMultiChat.csproj

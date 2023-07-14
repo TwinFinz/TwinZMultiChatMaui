@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="TwinZMultiChat.MainPage"
              xmlns:TM="clr-namespace:TwinZMultiChat"
              x:DataType="TM:UiData" >            
@@ -19,7 +20,9 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -55,9 +58,14 @@
             <Entry x:Name="TwitchClientSecretBox" HorizontalOptions="FillAndExpand" 
                    TextChanged="TwitchClientSecretBox_TextChanged" Text="{Binding TwitchClientSecret}"/>
         </StackLayout>
+        <StackLayout Grid.Row="6" Grid.Column="2" Orientation="Horizontal">
+            <Label Text="Overlay Location" VerticalOptions="Center" x:Name="OverlayLocationBoxLabel" IsVisible="false"/>
+            <Entry x:Name="OverlayLocationBox" HorizontalOptions="FillAndExpand" 
+                   TextChanged="OverlayLocationBox_TextChanged" Text="{Binding HtmlLocation}" IsVisible="false"/>
+        </StackLayout>
 
         <!-- Checkboxes -->
-        <StackLayout Grid.Row="6" Grid.Column="2" Orientation="Horizontal">
+        <StackLayout Grid.Row="7" Grid.Column="2" Orientation="Horizontal">
             <CheckBox x:Name="DiscordCheckBox" VerticalOptions="Center" CheckedChanged="DiscordCheckBox_CheckedChanged" IsChecked="{Binding EnableDiscord}"/>
             <Label Text="Discord" VerticalOptions="Center" />
 
@@ -66,6 +74,9 @@
 
             <CheckBox x:Name="TwitchCheckBox" VerticalOptions="Center" CheckedChanged="TwitchCheckBox_CheckedChanged" IsChecked="{Binding EnableTwitch}"/>
             <Label Text="Twitch" VerticalOptions="Center" />
+
+            <CheckBox x:Name="OverlayCheckBox" VerticalOptions="Center" CheckedChanged="OverlayCheckBox_CheckedChanged" IsChecked="{Binding EnableOverlay}"/>
+            <Label Text="Overlay" VerticalOptions="Center" x:Name="OverlayLabel"/>
 
             <CheckBox x:Name="KickCheckBox" VerticalOptions="Center" CheckedChanged="KickCheckBox_CheckedChanged" IsVisible="false" IsChecked="{Binding EnableKick}"/>
             <Label Text="Kick" VerticalOptions="Center" IsVisible="false"/>
@@ -84,7 +95,7 @@
             <Button Text="Save" Clicked="SaveBotCommand_Clicked" HorizontalOptions="Start" Margin="0,10,0,0" />
         </StackLayout>
 
-        <ScrollView Grid.Row="4" Grid.RowSpan="6" Grid.Column="1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" VerticalScrollBarVisibility="Always">
+        <ScrollView Grid.Row="4" Grid.RowSpan="7" Grid.Column="1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" VerticalScrollBarVisibility="Always">
             <StackLayout x:Name="tableLayout" Padding="10" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" >
                 <CollectionView ItemsSource="{Binding BotCommands}">
                     <CollectionView.ItemTemplate>
@@ -114,9 +125,9 @@
         </StackLayout>
 
         <!-- Chat Log -->
-        <ScrollView Grid.Row="0" Grid.RowSpan="9" Grid.Column="0" VerticalScrollBarVisibility="Always" Margin="0,0,10,0" >
+        <ScrollView Grid.Row="0" Grid.RowSpan="11" Grid.Column="0" VerticalScrollBarVisibility="Always" Margin="1,1,10,1" >
             <Editor x:Name="LogBox" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"
-                IsReadOnly="True" VerticalTextAlignment="Start" HorizontalTextAlignment="Start" FontSize="Medium" FlowDirection="LeftToRight"  />
+                IsReadOnly="True" VerticalTextAlignment="Start" HorizontalTextAlignment="Start" FontSize="Small" FlowDirection="LeftToRight"  />
         </ScrollView>
 
     </Grid>

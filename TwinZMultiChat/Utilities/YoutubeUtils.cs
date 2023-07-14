@@ -30,7 +30,7 @@ namespace TwinZMultiChat.Utilities
 {
     public class MyYoutubeAPI
     {
-#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable CA1822 // Mark members as static (I don't want them static)
         public readonly static string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwinZMulitChat");
         public bool ChatListener = true;
         private static YouTubeService? _youtubeService;
@@ -55,74 +55,7 @@ namespace TwinZMultiChat.Utilities
 
         // ------------------------------------------------------------------- //
 
-        public async Task ConnectAsyncSecondary()
-        {
-            try
-            {
-                string filePath = Path.Combine(DataFolder, "client_secret.json");
-                string tokenPath = Path.Combine(DataFolder, "tokens.json");
-                if (!File.Exists(filePath))
-                {
-                    await UiForm!.MessageBoxWithOK("Warning!", "client_secret.json NOT found. Please select the file downloaded from console.google.com.", "OK");
-                    FileResult? fileResult = await FilePicker.PickAsync(new PickOptions
-                    {
-                        FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
-                        {
-                            { DevicePlatform.iOS, new[] { "public.json" } },
-                            { DevicePlatform.Android, new[] { "application/json" } },
-                            { DevicePlatform.WinUI, new[] { ".json" } }
-                        })
-                    });
-
-                    if (fileResult != null)
-                    {
-                        // Handle the selected file
-                        // Rename the selected file to "client_secret.json"
-                        string newFilePath = Path.Combine(DataFolder, "client_secret.json");
-                        File.Copy(fileResult.FullPath, newFilePath);
-                        filePath = fileResult.FullPath;
-                        // Do something with the selected JSON file
-                    }
-                }
-                // ---------------------------------------------------------------------------------------------------------- //
-
-                GoogleClientSecrets clientSecrets;
-                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                {
-                    clientSecrets = GoogleClientSecrets.FromFile(filePath);
-                }
-                UserCredential credential; 
-                var authResult = await GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
-                {
-                    ClientId = clientSecrets.Secrets.ClientId,
-                    ClientSecret = clientSecrets.Secrets.ClientSecret
-                },
-                new[] { YouTubeService.Scope.Youtube },
-                applicationName,
-                CancellationToken.None,
-                new FileDataStore(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
-                credential = authResult;
-
-                BaseClientService.Initializer initializer = new()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
-                };
-
-
-                // ---------------------------------------------------------------------------------------------------------- //
-                _youtubeService = new YouTubeService(initializer)!;
-                curBroadcast = GetLiveBroadcast(_youtubeService!)!;
-
-                _chatMessageListenerTask = Task.Run(StartChatMessageListener);
-            }
-            catch (Exception ex)
-            {
-                await UiForm!.MessageBoxWithOK("Warning!", $"An error occurred while connecting: {ex.Message}", "OK");
-                throw new Exception(ex.Message);
-            }
-        } // does not work on android 
-
+ 
         public Uri GenerateAuthorizationUrl()
         {
             // Load client secrets from the JSON file
@@ -220,6 +153,74 @@ namespace TwinZMultiChat.Utilities
                     ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
                 };
 
+                _youtubeService = new YouTubeService(initializer)!;
+                curBroadcast = GetLiveBroadcast(_youtubeService!)!;
+
+                _chatMessageListenerTask = Task.Run(StartChatMessageListener);
+            }
+            catch (Exception ex)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", $"An error occurred while connecting: {ex.Message}", "OK");
+                throw new Exception(ex.Message);
+            }
+        } // does not work on android 
+
+       public async Task ConnectAsyncSecondary()
+        {
+            try
+            {
+                string filePath = Path.Combine(DataFolder, "client_secret.json");
+                string tokenPath = Path.Combine(DataFolder, "tokens.json");
+                if (!File.Exists(filePath))
+                {
+                    await UiForm!.MessageBoxWithOK("Warning!", "client_secret.json NOT found. Please select the file downloaded from console.google.com.", "OK");
+                    FileResult? fileResult = await FilePicker.PickAsync(new PickOptions
+                    {
+                        FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+                        {
+                            { DevicePlatform.iOS, new[] { "public.json" } },
+                            { DevicePlatform.Android, new[] { "application/json" } },
+                            { DevicePlatform.WinUI, new[] { ".json" } }
+                        })
+                    });
+
+                    if (fileResult != null)
+                    {
+                        // Handle the selected file
+                        // Rename the selected file to "client_secret.json"
+                        string newFilePath = Path.Combine(DataFolder, "client_secret.json");
+                        File.Copy(fileResult.FullPath, newFilePath);
+                        filePath = fileResult.FullPath;
+                        // Do something with the selected JSON file
+                    }
+                }
+                // ---------------------------------------------------------------------------------------------------------- //
+
+                GoogleClientSecrets clientSecrets;
+                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    clientSecrets = GoogleClientSecrets.FromFile(filePath);
+                }
+                UserCredential credential; 
+                var authResult = await GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+                {
+                    ClientId = clientSecrets.Secrets.ClientId,
+                    ClientSecret = clientSecrets.Secrets.ClientSecret
+                },
+                new[] { YouTubeService.Scope.Youtube },
+                applicationName,
+                CancellationToken.None,
+                new FileDataStore(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
+                credential = authResult;
+
+                BaseClientService.Initializer initializer = new()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
+                };
+
+
+                // ---------------------------------------------------------------------------------------------------------- //
                 _youtubeService = new YouTubeService(initializer)!;
                 curBroadcast = GetLiveBroadcast(_youtubeService!)!;
 
@@ -446,6 +447,126 @@ namespace TwinZMultiChat.Utilities
         }
 
 
+        public Task<string> GetLiveStreamStatus()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Status.LifeCycleStatus);
+            }
+
+            return Task.FromResult(string.Empty);
+        }
+
+        public Task<int> GetConcurrentViewers()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult((int)curBroadcast.Statistics.ConcurrentViewers!);
+            }
+
+            return Task.FromResult(0);
+        }
+
+        public Task<string> GetLiveChatId()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Snippet.LiveChatId);
+            }
+
+            return Task.FromResult(string.Empty);
+        }
+
+        public Task<string> GetLiveStreamId()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Id);
+            }
+
+            return Task.FromResult(string.Empty);
+        }
+
+        public Task<string> GetTitle()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Snippet.Title);
+            }
+
+            return Task.FromResult(string.Empty);
+        }
+
+        public Task<string> GetDescription()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Snippet.Description);
+            }
+
+            return Task.FromResult(string.Empty);
+        }
+
+        public Task<string> GetChannelId()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Snippet.ChannelId);
+            }
+
+            return Task.FromResult(string.Empty);
+        }
+
+        public Task<string> GetChannelTitle()
+        {
+            if (curBroadcast != null)
+            {
+                //return Task.FromResult(curBroadcast.Snippet.);
+            }
+
+            return Task.FromResult(string.Empty);
+        } // Needs Fix
+
+        public Task<DateTimeOffset> GetPublishedDate()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast!.Snippet.PublishedAtDateTimeOffset ?? DateTimeOffset.MinValue);
+            }
+
+            return Task.FromResult(DateTimeOffset.MinValue);
+        }
+
+        public Task<DateTimeOffset> GetScheduledStartTime()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Snippet.ScheduledStartTimeDateTimeOffset ?? DateTimeOffset.MinValue);
+            }
+
+            return Task.FromResult(DateTimeOffset.MinValue);
+        }
+
+        public Task<DateTimeOffset> GetActualStartTime()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Snippet.ActualStartTimeDateTimeOffset ?? DateTimeOffset.MinValue);
+            }
+
+            return Task.FromResult(DateTimeOffset.MinValue);
+        }
+
+        public Task<DateTimeOffset> GetActualEndTime()
+        {
+            if (curBroadcast != null)
+            {
+                return Task.FromResult(curBroadcast.Snippet.ActualStartTimeDateTimeOffset ?? DateTimeOffset.MinValue);
+            }
+
+            return Task.FromResult(DateTimeOffset.MinValue);
+        }
+
         public async Task<string> GetActiveLiveStreamId()
         {
             LiveBroadcastsResource.ListRequest? liveBroadcastsListRequest = _youtubeService!.LiveBroadcasts.List("id") ?? null;
@@ -510,7 +631,7 @@ namespace TwinZMultiChat.Utilities
             };           
 
             LiveChatMessagesResource.InsertRequest insertRequest = _youtubeService!.LiveChatMessages.Insert(liveChatMessage, "snippet")!;
-            LiveChatMessage insertedMessage = await insertRequest.ExecuteAsync()!;
+            _ = await insertRequest.ExecuteAsync()!;
         }
 
         static LiveBroadcast GetLiveBroadcast(YouTubeService youtubeService)

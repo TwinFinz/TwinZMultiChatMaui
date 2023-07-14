@@ -24,6 +24,10 @@ using TwitchLib.PubSub.Models.Responses.Messages.AutomodCaughtMessage;
 using TwitchLib.Api.Helix.Models.Channels.GetChannelInformation;
 using TwitchLib.Api.Helix.Models.Users.GetUserFollows;
 using TwitchLib.Api.Helix.Models.Videos.GetVideos;
+using TwitchLib.Api.Helix.Models.Chat.Badges.GetChannelChatBadges;
+using TwitchLib.Api.Helix.Models.Chat.Emotes.GetChannelEmotes;
+using TwitchLib.Api.Helix.Models.Chat.ChatSettings;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace TwinZMultiChat.Utilities
 {
@@ -324,6 +328,79 @@ namespace TwinZMultiChat.Utilities
             }
         }
 
+        public async Task<int> GetTotalSubscribers(string userId)
+        {
+            try
+            {
+                var subscriptionsResponse = await _helix!.Subscriptions.GetUserSubscriptionsAsync(userId, (new List<string>()));
+                if (subscriptionsResponse != null)
+                {
+                    return subscriptionsResponse.Data.Length;
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
+                return 0;
+            }
+        } // broken
+
+        public async Task<string> GetChannelName(string userId)
+        {
+            try
+            {
+                var channelResponse = await _helix!.Channels.GetChannelInformationAsync(userId);
+                if (channelResponse != null)
+                {
+                    return channelResponse.Data[0].BroadcasterName;
+                }
+                return string.Empty;
+            }
+            catch (Exception e)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
+                return string.Empty;
+            }
+        }
+
+        public async Task<DateTime?> GetNextScheduledStream(string userId)
+        {
+            try
+            {
+                var streamResponse = await _helix!.Streams.GetStreamsAsync(userIds: new List<string> { userId });
+                if (streamResponse != null && streamResponse.Streams.Length > 0)
+                {
+                    var stream = streamResponse.Streams[0];
+                    return stream.StartedAt;
+                }
+                return null;
+            }
+            catch (Exception e)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
+                return null;
+            }
+        }
+
+        public async Task<string> GetStreamLink(string userId)
+        {
+            try
+            {
+                var channelResponse = GetChannelName(userId);
+                if (channelResponse != null)
+                {
+                    return $"https://www.twitch.tv/{channelResponse}";
+                }
+                return string.Empty;
+            }
+            catch (Exception e)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
+                return string.Empty;
+            }
+        }
+
         public async Task<int> GetTotalVideoViews(string userId)
         {
             try
@@ -383,6 +460,77 @@ namespace TwinZMultiChat.Utilities
             {
                 await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
                 return 0;
+            }
+        }
+
+        public async Task<GetChannelChatBadgesResponse?> GetChatBadgesAsync(string channelId)
+        {
+            try
+            {
+                return await _helix!.Chat.GetChannelChatBadgesAsync(channelId);
+            }
+            catch (Exception e)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
+                return null;
+            }
+        }
+
+        public async Task<GetChannelEmotesResponse?> GetChatEmotesAsync(string channelId)
+        {
+            try
+            {
+                return await _helix!.Chat.GetChannelEmotesAsync(channelId);
+            }
+            catch (Exception e)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
+                return null;
+            }
+        }
+
+        public async Task GetEmoteLink()
+        {
+            string channelId = ""; // Replace with the actual channel ID
+            GetChannelChatBadgesResponse? badgesResponse = await GetChatBadgesAsync(channelId);
+            GetChannelEmotesResponse? emotesResponse = await GetChatEmotesAsync(channelId);
+
+            if (badgesResponse != null && badgesResponse.EmoteSet != null && badgesResponse.EmoteSet.Count() > 0)
+            {
+                // Replace $(Badge) with the badge URL or any desired value
+                foreach (var badgeSet in badgesResponse!.EmoteSet!)
+                {
+                    foreach (var version in badgeSet.Versions)
+                    {
+                        string badgeVariable = $"$(Badge.{badgeSet.SetId}.{version.Id})";
+                        string badgeValue = version.ImageUrl1x; // Replace with the desired value from the badge
+                        //text = text.Replace(badgeVariable, badgeValue);
+                    }
+                }
+            }
+
+            if (emotesResponse != null && emotesResponse.ChannelEmotes != null && emotesResponse.ChannelEmotes.Count() > 0)
+            {
+                // Replace $(Emote) with the emote URL or any desired value
+                foreach (var emote in emotesResponse!.ChannelEmotes!)
+                {
+                    string emoteVariable = $"$(Emote.{emote.Name})";
+                    string emoteValue = emote.Images.Url1X; // Replace with the desired value from the emote
+                    //text = text.Replace(emoteVariable, emoteValue);
+                }
+            }
+        } // Needs work
+
+        public async Task<GetChatSettingsResponse?> GetChatRulesAsync(string channelId)
+        {
+            try
+            {
+                return await _helix!.Chat.GetChatSettingsAsync(channelId, channelId);
+            }
+            catch (Exception e)
+            {
+                await UiForm!.MessageBoxWithOK("Warning!", e.Message, "OK");
+                return null;
             }
         }
 

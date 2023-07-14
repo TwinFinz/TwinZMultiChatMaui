@@ -28,7 +28,7 @@ using TwitchLib.PubSub.Models.Responses.Messages.AutomodCaughtMessage;
 
 namespace TwinZMultiChat.Utilities
 {
-#pragma warning disable CA1822 // If i wanted it static i would have initiated as static
+#pragma warning disable CA1822 // Mark members as static (I don't want them static)
     public class MyDiscordAPI
     {
         public readonly static string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwinZMulitChat");
@@ -336,6 +336,71 @@ namespace TwinZMultiChat.Utilities
             SocketRole role = guildUser.Roles.OrderByDescending(r => r.Position).FirstOrDefault()!;
             await Task.Delay(0); // fake delay
             return role!.Color.ToString();
+        }
+
+        public SocketGuild GetGuild(ulong guildId)
+        {
+            return _client!.GetGuild(guildId);
+        }
+
+        public SocketUser GetUser(ulong userId)
+        {
+            return _client!.GetUser(userId);
+        }
+
+        public Task<List<SocketGuildChannel>> GetChannelsAsync(ulong guildId)
+        {
+            SocketGuild guild = GetGuild(guildId);
+            return Task.FromResult(guild?.Channels.ToList()!);
+        }
+
+        public Task<List<SocketRole>> GetRolesAsync(ulong guildId)
+        {
+            SocketGuild guild = GetGuild(guildId);
+            return Task.FromResult(guild?.Roles.ToList()!);
+        }
+
+        public Task<List<SocketGuildUser>> GetMembersAsync(ulong guildId)
+        {
+            SocketGuild guild = GetGuild(guildId);
+            return Task.FromResult(guild?.Users.ToList()!);
+        }
+
+        public Task<List<SocketGuildUser>> GetOnlineMembersAsync(ulong guildId)
+        {
+            SocketGuild guild = GetGuild(guildId);
+            return Task.FromResult(guild?.Users.Where(u => u.Status != UserStatus.Offline).ToList()!);
+        }
+
+        public Task<List<SocketGuildUser>> GetOfflineMembersAsync(ulong guildId)
+        {
+            SocketGuild guild = GetGuild(guildId);
+            return Task.FromResult(guild?.Users.Where(u => u.Status == UserStatus.Offline).ToList()!);
+        }
+
+        public Task<List<SocketGuildUser>> GetBotMembersAsync(ulong guildId)
+        {
+            SocketGuild guild = GetGuild(guildId);
+            return Task.FromResult(guild?.Users.Where(u => u.IsBot).ToList()!);
+        }
+
+        public Task<int> GetVoiceChannelUserCountAsync(ulong voiceChannelId)
+        {
+            if (_client!.GetChannel(voiceChannelId) is SocketVoiceChannel voiceChannel)
+            {
+                return Task.FromResult(voiceChannel.Users.Count);
+            }
+            return Task.FromResult(0);
+        }
+
+        public async Task<int> GetMessageCountAsync(ulong textChannelId)
+        {
+            if (_client!.GetChannel(textChannelId) is SocketTextChannel textChannel)
+            {
+                var messages = await textChannel.GetMessagesAsync(int.MaxValue).FlattenAsync();
+                return messages.Count();
+            }
+            return 0;
         }
 
         static async Task<string> GetCatUrl()

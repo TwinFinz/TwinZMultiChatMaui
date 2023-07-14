@@ -1,5 +1,6 @@
 ﻿using Discord.WebSocket;
 using Microsoft.Maui.Controls;
+using CommunityToolkit.Maui.Storage;
 using Newtonsoft.Json;
 using TwitchLib.Client.Events;
 using System.Text;
@@ -8,6 +9,10 @@ using Microsoft.Maui.Controls.Compatibility;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Controls.Platform.Compatibility;
 using Microsoft.Maui.Dispatching;
+using TwitchLib.Api.Helix.Models.Chat.Badges.GetChannelChatBadges;
+using TwitchLib.Api.Helix.Models.Chat.Emotes.GetChannelEmotes;
+using TwitchLib.Api.Helix;
+using CommunityToolkit.Maui;
 
 namespace TwinZMultiChat;
 
@@ -17,6 +22,7 @@ public partial class MainPage : ContentPage
 
     //private const string BotUsername = "TwinZMultiChat";
 
+#pragma warning disable CA1822 // Mark members as static (I don't want them static)
     public readonly static string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwinZMulitChat");
     private readonly static string DefaultColor = "rgb(100,255,255)";
     public readonly string StreamMsgIntro = "TMC: ";
@@ -24,8 +30,10 @@ public partial class MainPage : ContentPage
     private readonly static List<OverlayMsg> chatMessages = new();
     private readonly static UiData UiDat = new();
     private static UiData StartingUiDat = new();
-    private DateTime lastTextChangedTime = DateTime.MinValue;
-    private readonly TimeSpan delayTimeSpan = TimeSpan.FromSeconds(5); // Delay used to prevent issues while typing the id
+    private Dictionary<string, int> userStrikes = new();  // Tracks the number of strikes for each user
+    private HashSet<string> bannedUsers = new ();  // Tracks the banned users
+    private const int MaxStrikes = 3;  // Maximum number of strikes before a user gets banned
+
 
     private static Utilities.MyDiscordAPI? discordBot;
     private static Utilities.MyTwitchAPI? twitchBot;
@@ -92,21 +100,24 @@ public partial class MainPage : ContentPage
         else
         {
             UiDat.LogText += Message + "\n";
-                LogBox.Text = UiDat.LogText;
+            LogBox.Text = UiDat.LogText;
         }
         await Task.Delay(0); // Fake Delay
     }
 
     private async void LoadSavedVariables()
     {
+#if DEBUG
+#endif
         BindingContext = this;
-        string filePath = Path.Combine(DataFolder, "Config.xml");
-        if (File.Exists(filePath))
+        
+        try
         {
-            string cfgInput = await File.ReadAllTextAsync(filePath);
-            try
+            string cfgInput = Preferences.Get("SavedUiData", string.Empty);
+            if (cfgInput != string.Empty)
             {
                 UiData? SavedUiData = JsonConvert.DeserializeObject<UiData>(cfgInput);
+
                 if (SavedUiData != null)
                 {
                     UiDat.DiscordBotToken = SavedUiData.DiscordBotToken;
@@ -127,46 +138,54 @@ public partial class MainPage : ContentPage
                     UiDat.YouTubeApplicationName = SavedUiData.YouTubeApplicationName;
                     YouTubeApplicationNameBox.Text = UiDat.YouTubeApplicationName;
 
-                    UiDat.BotCommands = SavedUiData.BotCommands;                    
-                    RefreshTableView();
-                }
-                await WriteToLog("Loaded Successfully.");
-            }
-            catch (JsonException ex)
-            {
-                await WriteToLog($"Failed to deserialize JSON: {ex.Message}");
-            }
-        }
-        else
-        {
-            await WriteToLog("Config Not Found.");
-        }
-    }
-    #endregion
+                    UiDat.HtmlLocation = SavedUiData.HtmlLocation;
+                    OverlayLocationBox.Text = UiDat.HtmlLocation;
 
-    #region BtnClicks
+                    UiDat.EnableDiscord = SavedUiData.EnableDiscord;
+                    DiscordCheckBox.IsChecked = UiDat.EnableDiscord;
+
+                    UiDat.EnableYouTube = SavedUiData.EnableYouTube;
+                    YouTubeCheckBox.IsChecked = UiDat.EnableYouTube;
+
+                    UiDat.EnableTwitch = SavedUiData.EnableTwitch;
+                    TwitchCheckBox.IsChecked = UiDat.EnableTwitch;
+
+                    UiDat.EnableOverlay = SavedUiData.EnableOverlay;
+                    OverlayCheckBox.IsChecked = UiDat.EnableOverlay;
+
+                    UiDat.BotCommands = SavedUiData.BotCommands;
+                    RefreshTableView();
+                    await WriteToLog("Loaded Successfully.");
+                }
+            }
+            else
+            {
+                await WriteToLog("Config Not Found.");
+            }
+        }
+        catch (JsonException ex)
+        {
+            await WriteToLog($"Failed to deserialize JSON: {ex.Message}");
+        }
+        
+    }
+#endregion
+
+#region BtnClicks
     private async void OnSaveBtn_Clicked(object sender, EventArgs e)
     {
         string JsonOutput = "";
         JsonOutput += JsonConvert.SerializeObject(UiDat);
-
         try
         {
-            if (!Directory.Exists(DataFolder))
-            {
-                Directory.CreateDirectory(DataFolder);
-            }
-            string filePath = Path.Combine(DataFolder, "Config.xml");
-            File.WriteAllText(filePath, JsonOutput);
+            Preferences.Set("SavedUiData", JsonOutput);
 
-            await WriteToLog($"{filePath}\nSave Successfully.\n");
+            await WriteToLog($"Saved Successfully.\n");
         }
         catch (Exception ex)
         {
             await WriteToLog($"Save Failed: {ex.Message}\n");
         }
-
-        await Task.Delay(0); // Fake Await
     }
 
     private async void OnResetBtn_Clicked(object sender, EventArgs e)
@@ -177,7 +196,11 @@ public partial class MainPage : ContentPage
         TwitchClientIDBox.Text = "";
         TwitchClientSecretBox.Text = "";
         YouTubeApplicationNameBox.Text = "";
+        OverlayLocationBox.Text = "";
+#if DEBUG
+#else
         //File.Delete(Path.Combine(DataFolder, "Config.xml"));
+#endif
         await WriteToLog("Reset Successfully.\n");
     }
     
@@ -235,9 +258,9 @@ public partial class MainPage : ContentPage
         await StopAsync();
         await WriteToLog("Stopped Sync");
     }
-    #endregion BtnClicks
+#endregion BtnClicks
 
-    #region UI elements
+#region UI elements
     private void DiscordBotTokenBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         UiDat.DiscordBotToken = e.NewTextValue ?? "";
@@ -287,6 +310,11 @@ public partial class MainPage : ContentPage
         UiDat.TwitchClientSecret = e.NewTextValue ?? "";
     }
 
+    private void OverlayLocationBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UiDat.HtmlLocation = e.NewTextValue ?? "";
+    }
+
     private void DiscordCheckBox_CheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         UiDat.EnableDiscord = e.Value;
@@ -305,6 +333,26 @@ public partial class MainPage : ContentPage
     private void KickCheckBox_CheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         UiDat.EnableKick = e.Value;
+    }
+
+    private async void OverlayCheckBox_CheckedChanged(object sender, CheckedChangedEventArgs e)
+    {
+        UiDat.EnableOverlay = e.Value;
+        if (UiDat.EnableOverlay)
+        {
+            if (UiDat.HtmlLocation == string.Empty)
+            {
+                UiDat.HtmlLocation = await PickFolder();
+                OverlayLocationBox.Text = UiDat.HtmlLocation;
+            }
+            OverlayLocationBox.IsVisible = true;
+            OverlayLocationBoxLabel.IsVisible = true;
+        }
+        else
+        {
+            OverlayLocationBox.IsVisible = false;
+            OverlayLocationBoxLabel.IsVisible = false;
+        }
     }
 
     private void RefreshTableView()
@@ -353,7 +401,7 @@ public partial class MainPage : ContentPage
         return string.Empty;
     }
 
-    public async Task<bool> MessageBoxWithOK(string title, string promptMessage, string cancel)
+    public async Task<bool> MessageBoxWithOK(string title, string promptMessage, string cancel = "OK")
     {
         if (Dispatcher.IsDispatchRequired)
         {
@@ -387,6 +435,48 @@ public partial class MainPage : ContentPage
         return false;
     }
 
+    private static bool IsFolderWritable(string folderPath)
+    {
+        try
+        {
+            // Try creating a new file in the folder
+            string testFilePath = System.IO.Path.Combine(folderPath, "test.txt");
+            using (var fileStream = System.IO.File.Create(testFilePath))
+            {
+                fileStream.Close();
+                System.IO.File.Delete(testFilePath);
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static async Task<string> PickFolder()
+    {
+        string startpath = Environment.CurrentDirectory;
+        if (UiDat.HtmlLocation != string.Empty)
+        {
+            startpath = UiDat.HtmlLocation;
+        }
+
+        CancellationTokenSource source = new();
+        CancellationToken token = source.Token;
+        var selectedFolder = await FolderPicker.Default.PickAsync(startpath, token);
+        if (selectedFolder != null)
+        {
+            string folderPath = selectedFolder.Folder!.Path;
+            if (IsFolderWritable(folderPath))
+            {
+                return folderPath;
+            }
+        }
+        return string.Empty;
+    }
+
     public async void LaunchUrl(string url)
     {
         try
@@ -399,12 +489,25 @@ public partial class MainPage : ContentPage
             await this.MessageBoxWithOK("Warning!", $"Failed to launch the default web browser: {ex.Message}", "OK");
         }
     }
-    #endregion
+#endregion
 
-    #region MessageUtils
+#region MessageUtils
     public async Task StartAsync()
     {
-        if (UiDat.EnableTwitch) // Connect Twitch
+        if (UiDat.EnableOverlay) // Connect Twitch
+        {
+            try
+            {
+                await MessageBoxWithOK("Select Folder", "Location not found. Please select a location to save the generated HTML file.");
+
+            }
+            catch (Exception ex)
+            {
+                await MessageBoxWithOK("Warning!", ex.Message, "OK");
+            }
+            await WriteToLog("Enabled Overlay Generation.");
+        }
+            if (UiDat.EnableTwitch) // Connect Twitch
         {
             twitchBot = new(this, UiDat.TwitchClientID, UiDat.TwitchClientSecret, UiDat!.TwitchChatID);
             await WriteToLog("Connecting to Twitch.");
@@ -430,17 +533,13 @@ public partial class MainPage : ContentPage
 #if DEBUG
                 await youTubeBot!.ConnectAsyncSecondary();
                 await this.MessageBoxWithOK("Warning!", $"This is currently broken on android. Sorry, Hope to get it fixed soon.", "OK");
-#else                
+#else
                 await this.MessageBoxWithOK("Warning!", $"This is currently broken on android. Sorry, Hope to get it fixed soon.", "OK");
 #endif
             }
-            else if (DeviceInfo.Platform == DevicePlatform.iOS)
-            {
-                await youTubeBot!.ConnectAsyncSecondary();
-            }
             else
             {
-                await youTubeBot!.ConnectAsyncSecondary(); // All other OS.
+                await youTubeBot!.ConnectAsync(); // All other OS.
             }
             youTubeBot!.ChatMessageReceived += SyncMessageYouTube;
             await youTubeBot!.SendLiveChatMessage($"{UiDat.YouTubeApplicationName}: Active");
@@ -448,13 +547,7 @@ public partial class MainPage : ContentPage
         }
         if (UiDat.EnableKick)
         {
-            //kickBot = new(YouTubeApplicationName);
-            await WriteToLog("Connecting to Kick.");
-            //await kickBot!.ConnectAsync();
             await WriteToLog("We have not yet implemented Kick. Sorry");
-            //kickBot!.ChatMessageReceived += SyncMessageYouTube;
-            //await kickBot!.SendLiveChatMessage($"{YouTubeApplicationName}: Active");
-            await WriteToLog("Success.");
         }
     }
 
@@ -501,7 +594,10 @@ public partial class MainPage : ContentPage
             await ProcessBotCommand("discord", command);
             return;
         }
-        AddMessageToChatOverlay(msg);
+        if (UiDat.EnableOverlay)
+        {
+            AddMessageToChatOverlay(msg);
+        }
         if (UiDat.EnableYouTube)
         {
             await youTubeBot!.SendLiveChatMessage($"{discordBot!.StreamMsgIntro}{message.Author.Username}: {message.Content}");
@@ -510,7 +606,6 @@ public partial class MainPage : ContentPage
         {
             await twitchBot!.SendMessage($"{discordBot!.StreamMsgIntro}{message.Author.Username}: {message.Content}");
         }
-        await Task.Delay(0); // FakeDelay
     }
 
     public async void SyncMessageYouTube(object? sender, Utilities.MyYoutubeAPI.ChatMessageEventArgs YTMessage)
@@ -522,14 +617,17 @@ public partial class MainPage : ContentPage
             User = YTMessage.Username,
             UserColor = DefaultColor,
             Message = YTMessage.Message
-        }; 
+        };
         if (YTMessage.Message.StartsWith("!"))
         {
             string command = YTMessage.Message.ToLower();
             await ProcessBotCommand("youtube", command);
             return;
         }
-        AddMessageToChatOverlay(msg);
+        if (UiDat.EnableOverlay)
+        {
+            AddMessageToChatOverlay(msg);
+        }
         if (UiDat.EnableDiscord)
         {
             await discordBot!.SendMessageAsync(UiDat.DiscordChannelID, $"{discordBot!.StreamMsgIntro}{YTMessage.Username}: {YTMessage.Message}");
@@ -538,7 +636,6 @@ public partial class MainPage : ContentPage
         {
             await twitchBot!.SendMessage($"{discordBot!.StreamMsgIntro}{YTMessage.Username}: {YTMessage.Message}");
         }
-        await Task.Delay(0); // FakeDelay
     }
 
     public async void SyncMessageTwitch(object? sender, OnMessageReceivedArgs TwitchMsg)
@@ -554,10 +651,13 @@ public partial class MainPage : ContentPage
         if (TwitchMsg.ChatMessage.Message.StartsWith("!"))
         {
             string command = TwitchMsg.ChatMessage.Message.ToLower();
-            await ProcessBotCommand("twitch", command.Replace("!",""));
+            await ProcessBotCommand("twitch", command.Replace("!", ""));
             return;
         }
-        AddMessageToChatOverlay(msg);
+        if (UiDat.EnableOverlay)
+        {
+            AddMessageToChatOverlay(msg);
+        }
         if (UiDat.EnableDiscord)
         {
             await discordBot!.SendMessageAsync(UiDat.DiscordChannelID, $"{discordBot!.StreamMsgIntro}{TwitchMsg.ChatMessage.Username}: {TwitchMsg.ChatMessage.Message}");
@@ -566,8 +666,6 @@ public partial class MainPage : ContentPage
         {
             await youTubeBot!.SendLiveChatMessage($"{discordBot!.StreamMsgIntro}{TwitchMsg.ChatMessage.Username}: {TwitchMsg.ChatMessage.Message}");
         }
-
-        await Task.Delay(0); // FakeDelay
     }
 
     // Function to process bot commands
@@ -595,21 +693,37 @@ public partial class MainPage : ContentPage
                 //text = text.Replace("$(User.Level)", "250");
                 //text = text.Replace("$(Title)", ""); // Replace with channel's title
                 //text = text.Replace("$(Channel)", ""); // Replace with channel's name
-                //text = text.Replace("$(Channel.Viewers}", "234");
+                //text = text.Replace("$(Channel.Viewers)", "234");
                 break;
             case "youtube":
-                //text = text.Replace("${user}", "");
-                //text = text.Replace("${title}", "Playing Spyro!");
+                text = text.Replace("$(livestreamstatus)", await youTubeBot!.GetLiveStreamStatus());
+                text = text.Replace("$(concurrentviewers)", (await youTubeBot!.GetConcurrentViewers()).ToString());
+                text = text.Replace("$(livechatid)", await youTubeBot!.GetLiveChatId());
+                text = text.Replace("$(livestreamid)", await youTubeBot!.GetLiveStreamId());
+                text = text.Replace("$(title)", await youTubeBot!.GetTitle());
+                text = text.Replace("$(description)", await youTubeBot!.GetDescription());
+                text = text.Replace("$(channelid)", await youTubeBot!.GetChannelId());
+                text = text.Replace("$(channeltitle)", await youTubeBot!.GetChannelTitle());
+                text = text.Replace("$(publisheddate)", (await youTubeBot!.GetPublishedDate()).ToString());
+                text = text.Replace("$(scheduledstarttime)", (await youTubeBot!.GetScheduledStartTime()).ToString());
+                text = text.Replace("$(actualstarttime)", (await youTubeBot!.GetActualStartTime()).ToString());
+                text = text.Replace("$(actualendtime)", (await youTubeBot!.GetActualEndTime()).ToString());
+                //text = text.Replace("$(totalviews)", (await youTubeBot!.GetTotalViews()).ToString());
+                //text = text.Replace("$(likecount)", (await youTubeBot!.GetLikeCount()).ToString());
+                //text = text.Replace("$(dislikecount)", (await youTubeBot!.GetDislikeCount()).ToString());
+                //text = text.Replace("$(commentcount)", (await youTubeBot!.GetCommentCount()).ToString());
+                //text = text.Replace("$(favoritecount)", (await youTubeBot!.GetFavoriteCount()).ToString());
+                //text = text.Replace("$(duration)", await youTubeBot!.GetDuration());
                 break;
             case "twitch":
                 string usrID = await twitchBot!.CurUserId();
-                //text = text.Replace("$(Followers)", twitchBot!.GetTotalFollowers(usrID).Result.ToString()).ToString();
-                //text = text.Replace("$(Subscriptions)", twitchBot!.GetSubscriptions(usrID, (new List<string>() { usrID })).Result!.Data.Length.ToString());
-                //text = text.Replace("$(VideoViews)", twitchBot!.GetTotalVideoViews(usrID).Result!.ToString());
-                //text = text.Replace("$(User)", ""); // Replace with user's display name
-               //text = text.Replace("$(Title)", ""); // Replace with channel's title
-                //text = text.Replace("$(Channel)", ""); // Replace with channel's name
-                //text = text.Replace("$(Channel.viewers)", "234");
+                text = text.Replace("$(Followers)", (await twitchBot!.GetTotalFollowers(usrID)).ToString());
+                text = text.Replace("$(Subscriptions)", (await twitchBot!.GetSubscriptions(usrID, new List<string>{ usrID }))!.Data.Length.ToString());
+                text = text.Replace("$(TotalViews)", (await twitchBot!.GetTotalVideoViews(usrID)).ToString());
+                text = text.Replace("$(User)", (await twitchBot!.GetChannelName(usrID)));
+                text = text.Replace("$(Channel)", (await twitchBot!.GetChannelName(usrID))); // Replace with channel's name
+                //text = text.Replace("$(Title)", ""); // Replace with channel's title
+                //text = text.Replace("$(Channel.viewers)", "");
                 //text = text.Replace("$(Sender)", ""); // Replace with sender
                 //text = text.Replace("$(Sender.Points)", "123"); // Replace with points
                 //text = text.Replace("$(StreamLength)", "LCS has been streaming for 15 minutes!");
@@ -697,9 +811,9 @@ public partial class MainPage : ContentPage
             // Platform not supported, handle it accordingly
         }
     }
-    #endregion
+#endregion
 
-    #region OBS Overlay
+#region OBS Overlay
     public static string GenerateChatOverlay(List<OverlayMsg> chatMessages, int refreshIntervalInSeconds)
     {
         StringBuilder sb = new();
@@ -804,12 +918,10 @@ public partial class MainPage : ContentPage
         {
             chatMessages.RemoveAt(0);
         }
-
         string overlayHtml = GenerateChatOverlay(chatMessages, 1);
-
         lock (chatOverlayFileLock)
         {
-            string filePath = Path.Combine(DataFolder, "ChatOverlay.html");
+            string filePath = Path.Combine(UiDat.HtmlLocation, "ChatOverlay.html");
             File.WriteAllText(filePath, overlayHtml);
         }
     }
@@ -825,9 +937,7 @@ public partial class MainPage : ContentPage
         [JsonProperty("message")]
         public string Message { get; set; } = string.Empty;
     }
-    #endregion
-
-
+#endregion
 }
 
 public class UiData // Data for Syncing with UI
@@ -838,6 +948,8 @@ public class UiData // Data for Syncing with UI
     public ulong DiscordChannelID { get; set; } = ulong.MinValue;
     [JsonProperty("youtube_application_name")]
     public string YouTubeApplicationName { get; set; } = string.Empty;
+    [JsonProperty("html_location")]
+    public string HtmlLocation { get; set; } = string.Empty;
     [JsonProperty("twitch_client_is")]
     public string TwitchClientID { get; set; } = string.Empty;
     [JsonProperty("twitch_client_secret")]
@@ -852,6 +964,8 @@ public class UiData // Data for Syncing with UI
     public bool EnableTwitch { get; set; } = false;
     [JsonProperty("enable_kick")]
     public bool EnableKick { get; set; } = false;
+    [JsonProperty("enable_openai")]
+    public bool EnableOverlay { get; set; } = false;
     [JsonProperty("bot_commands")]
     public Dictionary<string, string> BotCommands { get; set; } = new();
     [JsonProperty("bot_command")]
@@ -862,6 +976,7 @@ public class UiData // Data for Syncing with UI
     public string LogText { get; set; } = string.Empty;
 }
 
+#pragma warning restore CA1822 // Mark members as static
 /* Example Preferences Get/Set
  * // getter
  * var value = Preferences.Get("nameOfSetting", "defaultValueForSetting");
