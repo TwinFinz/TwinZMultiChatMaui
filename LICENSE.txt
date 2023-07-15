@@ -4,6 +4,7 @@ CommunityToolKit: Copyright (c) .NET Foundation and Contributors
 Newtonsoft.Json: Copyright (c) 2007 James Newton-King
 TwitchLib: Copyright (c) 2017 swiftyspiffy (Cole)
 Discord.Net: Copyright (c) 2015-2022 Contributors
+EmojiSharp: Copyright (c) 2015 Jmazouri Fructifications
 TwinZMultiChat: Copyright (c) 2015-2022 Contributors
 All Rights Reserved
 
