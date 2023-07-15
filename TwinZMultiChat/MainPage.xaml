@@ -92,7 +92,7 @@
                 <Label Text="Bot Response: " VerticalOptions="Center" />
                 <Entry x:Name="botResponseBox" HorizontalOptions="FillAndExpand" Text="{Binding BotResponse}" />
             </StackLayout>
-            <Button Text="Save" Clicked="SaveBotCommand_Clicked" HorizontalOptions="Start" Margin="0,10,0,0" />
+            <Button x:Name="SaveCmdBtn" Text="Save" Clicked="SaveBotCommand_Clicked" HorizontalOptions="Start" Margin="0,10,0,0" Style="{StaticResource DarkButtonStyle}" />
         </StackLayout>
 
         <ScrollView Grid.Row="4" Grid.RowSpan="7" Grid.Column="1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" VerticalScrollBarVisibility="Always">
@@ -116,20 +116,20 @@
 
         <!-- Buttons -->
         <StackLayout Grid.Row="8" Grid.Column="2" Orientation="Horizontal" VerticalOptions="End">
-            <Button Text="License" Style="{StaticResource DarkButtonStyle}" Clicked="OnLicenseBtn_Clicked"/>
-            <Button Text="Save" Style="{StaticResource DarkButtonStyle}" Clicked="OnSaveBtn_Clicked"/>
-            <Button Text="Reset" Style="{StaticResource DarkButtonStyle}" Clicked="OnResetBtn_Clicked"/>
+            <Button x:Name="LicenseBtn" Text="License" Style="{StaticResource DarkButtonStyle}" Clicked="OnLicenseBtn_Clicked"/>
+            <Button x:Name="SaveBtn" Text="Save" Style="{StaticResource DarkButtonStyle}" Clicked="OnSaveBtn_Clicked"/>
+            <Button x:Name="ResetBtn" Text="Reset" Style="{StaticResource DarkButtonStyle}" Clicked="OnResetBtn_Clicked"/>
         </StackLayout>
         <StackLayout Grid.Row="10" Grid.Column="2" Orientation="Horizontal" VerticalOptions="StartAndExpand" Visual="Default">
-            <Button Text="Start" Style="{StaticResource DarkButtonStyle}" Clicked="OnStartBtn_Clicked"/>
-            <Button Text="Stop" Style="{StaticResource DarkButtonStyle}" Clicked="OnStopBtn_Clicked" />
+            <Button x:Name="StartBtn" Text="Start" Style="{StaticResource DarkButtonStyle}" Clicked="OnStartBtn_Clicked"/>
+            <Button x:Name="StopBtn" Text="Stop" Style="{StaticResource DarkButtonStyle}" Clicked="OnStopBtn_Clicked" />
         </StackLayout>
 
         <!-- Chat Log -->
-        <ScrollView Grid.Row="0" Grid.RowSpan="11" Grid.Column="0" VerticalScrollBarVisibility="Always" Margin="1,1,10,1" >
-            <Editor x:Name="LogBox" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"
-                IsReadOnly="True" VerticalTextAlignment="Start" HorizontalTextAlignment="Start" FontSize="Small" FlowDirection="LeftToRight"  />
-        </ScrollView>
+		<ScrollView Grid.Row="0" Grid.Column="0" Grid.RowSpan="11" VerticalScrollBarVisibility="Always" Margin="1,1,10,1">
+			<Editor x:Name="LogBox" VerticalOptions="FillAndExpand" HorizontalOptions="Fill" IsReadOnly="True" VerticalTextAlignment="Start" HorizontalTextAlignment="Start"
+					FontSize="Small" FlowDirection="LeftToRight" AutoSize="TextChanges" />
+		</ScrollView>
 
     </Grid>
 

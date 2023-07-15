@@ -23,7 +23,7 @@ public partial class MainPage : ContentPage
     //private const string BotUsername = "TwinZMultiChat";
 
 #pragma warning disable CA1822 // Mark members as static (I don't want them static)
-    public readonly static string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwinZMulitChat");
+    public readonly static string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwinZMultiChat");
     private readonly static string DefaultColor = "rgb(100,255,255)";
     public readonly string StreamMsgIntro = "TMC: ";
     private readonly static object chatOverlayFileLock = new();
@@ -102,7 +102,6 @@ public partial class MainPage : ContentPage
             UiDat.LogText += Message + "\n";
             LogBox.Text = UiDat.LogText;
         }
-        await Task.Delay(0); // Fake Delay
     }
 
     private async void LoadSavedVariables()
@@ -174,6 +173,7 @@ public partial class MainPage : ContentPage
 #region BtnClicks
     private async void OnSaveBtn_Clicked(object sender, EventArgs e)
     {
+        VisualStateManager.GoToState(SaveBtn, "Normal");
         string JsonOutput = "";
         JsonOutput += JsonConvert.SerializeObject(UiDat);
         try
@@ -190,6 +190,7 @@ public partial class MainPage : ContentPage
 
     private async void OnResetBtn_Clicked(object sender, EventArgs e)
     {
+        VisualStateManager.GoToState(ResetBtn, "Normal");
         DiscordBotTokenBox.Text = "";
         DiscordChannelIDBox.Text = "";
         TwitchChatIDBox.Text = "";
@@ -197,43 +198,44 @@ public partial class MainPage : ContentPage
         TwitchClientSecretBox.Text = "";
         YouTubeApplicationNameBox.Text = "";
         OverlayLocationBox.Text = "";
-#if DEBUG
-#else
-        //File.Delete(Path.Combine(DataFolder, "Config.xml"));
-#endif
         await WriteToLog("Reset Successfully.\n");
     }
-    
-    private void SaveBotCommand_Clicked(object sender, EventArgs e)
+
+    private async void SaveBotCommand_Clicked(object sender, EventArgs e)
     {
-        string command = botCommandBox.Text.Trim().ToLower(); 
-        string response = botResponseBox.Text.Trim();
-
-        if (!string.IsNullOrEmpty(command) && !string.IsNullOrEmpty(response))
+        VisualStateManager.GoToState(SaveCmdBtn, "Normal");
+        if (!string.IsNullOrWhiteSpace(botResponseBox.Text) || !string.IsNullOrWhiteSpace(botCommandBox.Text))
         {
-            // Add or update the command/response pair in the dictionary
-            if (!UiDat!.BotCommands.ContainsKey(command))
+            string command = botCommandBox.Text.Trim().ToLower();
+            string response = botResponseBox.Text.Trim();
+            if (!string.IsNullOrEmpty(command) && !string.IsNullOrEmpty(response))
             {
-                UiDat!.BotCommands.Add(command, response);
+                // Add or update the command/response pair in the dictionary
+                if (!UiDat!.BotCommands.ContainsKey(command))
+                {
+                    UiDat!.BotCommands.Add(command, response);
+                }
+                else
+                {
+                    UiDat!.BotCommands[command] = response;
+                }
+                // Clear the input fields
+                botCommandBox.Text = string.Empty;
+                botResponseBox.Text = string.Empty;
+                // Refresh the table view
+                RefreshTableView();
+                OnSaveBtn_Clicked(this, new EventArgs());
             }
-            else
-            {
-                UiDat!.BotCommands[command] = response;
-            }
-
-            // Clear the input fields
-            botCommandBox.Text = string.Empty;
-            botResponseBox.Text = string.Empty;
-
-            // Refresh the table view
-            RefreshTableView();
-            OnSaveBtn_Clicked(this, new EventArgs());
-
+        }
+        else
+        {
+            await MessageBoxWithOK("Failed!", "The command nor the response can be empty.");
         }
     }
 
     private async void OnStartBtn_Clicked(object sender, EventArgs e)
     {
+        VisualStateManager.GoToState(StartBtn, "Normal");
         try
         {
             StartingUiDat = new UiData() 
@@ -254,6 +256,7 @@ public partial class MainPage : ContentPage
 
     private async void OnStopBtn_Clicked(object sender, EventArgs e)
     {
+        VisualStateManager.GoToState(StopBtn, "Normal");
         await Task.Delay(50);
         await StopAsync();
         await WriteToLog("Stopped Sync");
@@ -261,6 +264,7 @@ public partial class MainPage : ContentPage
 
     private async void OnLicenseBtn_Clicked(object sender, EventArgs e)
     {
+        VisualStateManager.GoToState(LicenseBtn, "Normal");
         try
         {
             string LicenseText = "MIT License\r\n\r\nCommunityToolKit: Copyright (c) .NET Foundation and Contributors\r\nNewtonsoft.Json: Copyright (c) 2007 James Newton-King\r\nTwitchLib: Copyright (c) 2017 swiftyspiffy (Cole)\r\nDiscord.Net: Copyright (c) 2015-2022 Contributors\r\nTwinZMultiChat: Copyright (c) 2015-2022 Contributors\r\nAll Rights Reserved\r\n\r\nPermission is hereby granted, free of charge, to any person obtaining a copy\r\nof this software and associated documentation files (the \"Software\"), to deal\r\nin the Software without restriction, including without limitation the rights\r\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\r\ncopies of the Software, and to permit persons to whom the Software is\r\nfurnished to do so, subject to the following conditions:\r\n\r\nThe above copyright notice and this permission notice shall be included in all\r\ncopies or substantial portions of the Software.\r\n\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\r\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\r\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\r\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\r\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\r\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\r\nSOFTWARE.\r\n\r\n--------------------------------------------------------------------------------\r\nApache 2.0 License\r\n\r\nGoogle.Apis.YouTube.v3: Copyright (c) 2011-2015 Google Inc.\r\n\r\nLicensed under the Apache License, Version 2.0 (the \"License\");\r\nyou may not use this file except in compliance with the License.\r\nYou may obtain a copy of the License at\r\n\r\n    http://www.apache.org/licenses/LICENSE-2.0\r\n\r\nUnless required by applicable law or agreed to in writing, software\r\ndistributed under the License is distributed on an \"AS IS\" BASIS,\r\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\nSee the License for the specific language governing permissions and\r\nlimitations under the License.";
@@ -405,7 +409,7 @@ public partial class MainPage : ContentPage
         else
         {
             string input = await Application.Current!.MainPage!.DisplayPromptAsync(title, promptMessage, confirm, cancel);
-            if (string.IsNullOrEmpty(input))
+            if (string.IsNullOrWhiteSpace(input))
             {
                 throw new Exception("User Canceled Authorization");
             }
@@ -510,15 +514,6 @@ public partial class MainPage : ContentPage
     {
         if (UiDat.EnableOverlay) // Connect Twitch
         {
-            try
-            {
-                await MessageBoxWithOK("Select Folder", "Location not found. Please select a location to save the generated HTML file.");
-
-            }
-            catch (Exception ex)
-            {
-                await MessageBoxWithOK("Warning!", ex.Message, "OK");
-            }
             await WriteToLog("Enabled Overlay Generation.");
         }
             if (UiDat.EnableTwitch) // Connect Twitch
