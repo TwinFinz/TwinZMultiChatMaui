@@ -27,6 +27,7 @@ Client ID and Client Secret from your Twitch developer account: [https://dev.twi
 Youtube.v3 OAuth 2.0 client keys (client_secret.json): [https://console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
 
 Discord Bot Token: [https://discord.com/developers/applications](https://discord.com/developers/applications)
+
 (Discord bot needs to be added to your server by using the Generate URL with "Bot" enabled. I used Admin but read and write permissions should suffice)
 
 Discord Channel ID(the one you want to use for the synced chat): Go into Discord settings and turn on "Developer Mode", Navigate to the channel you want to use. Right Click and copy the Channel ID.
