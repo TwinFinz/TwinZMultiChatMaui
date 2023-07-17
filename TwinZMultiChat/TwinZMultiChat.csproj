@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>net7.0-android33.0</TargetFrameworks>
@@ -85,7 +85,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net7.0-android33.0|AnyCPU'">
-	  <AndroidKeyStore>Frue</AndroidKeyStore>
+	  <AndroidKeyStore>False</AndroidKeyStore>
 	  <AndroidSigningStorePass></AndroidSigningStorePass>
 	  <AndroidSigningKeyAlias></AndroidSigningKeyAlias>
 	  <AndroidSigningKeyPass></AndroidSigningKeyPass>
