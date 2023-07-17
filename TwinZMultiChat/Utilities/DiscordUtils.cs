@@ -403,6 +403,56 @@ namespace TwinZMultiChat.Utilities
             return 0;
         }
 
+        public async Task<bool> IsUserAdmin(string username)
+        {
+            if (_client != null)
+            {
+                var guild = _client.Guilds.FirstOrDefault(); // Replace GUILD_ID with your guild ID
+                var user = guild!.Users.FirstOrDefault(u => u.Username == username);
+                if (user != null)
+                {
+                    return await IsUserAdminAsync(user, guild);
+                }
+            }
+            return false;
+        }
+
+        private Task<bool> IsUserAdminAsync(SocketUser user, SocketGuild guild)
+        {
+            var currentUser = guild.GetUser(_client!.CurrentUser.Id);
+            var currentUserRoles = currentUser.Roles;
+            var targetUser = guild.GetUser(user.Id);
+            var targetUserRoles = targetUser.Roles;
+
+            foreach (var role in targetUserRoles)
+            {
+                if (currentUserRoles.Contains(role))
+                {
+                    return Task.FromResult(true);
+                }
+            }
+
+            return Task.FromResult(false);
+        } // Needs Testing
+
+        public Task<string> ReplaceDiscordEmotes(string message)
+        {
+            var guild = _client?.Guilds.FirstOrDefault(); // Get the current guild dynamically
+            if (guild == null)
+            {
+                return Task.FromResult(message);
+            }
+            var emotes = guild.Emotes;
+            foreach (var emote in emotes)
+            {
+                var emoteCode = $"<:{emote.Name}:{emote.Id}>";
+                var emoteHtml = $"<img src=\"{emote.Url}\" alt=\"{emote.Name}\">";
+                message = message.Replace(emoteCode, emoteHtml);
+            }
+
+            return Task.FromResult(message);
+        }
+
         static async Task<string> GetCatUrl()
         {
             //API that returns random image of a cat

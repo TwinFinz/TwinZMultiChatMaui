@@ -1,0 +1,36 @@
+$(User): Represents the user's display name. It can be replaced with the actual user's display name.
+$(User.Level): Represents the user's level. It can be replaced with a specific level, such as "250".
+$(Title): Represents the title of the channel. It can be replaced with the actual channel's title.
+$(Channel): Represents the name of the channel. It can be replaced with the actual channel's name.
+$(Channel.Viewers): Represents the number of viewers in the channel. It can be replaced with a specific number, such as "234".
+For the "youtube" case:
+
+$(livestreamstatus): Represents the live stream status. It can be replaced with the actual live stream status.
+$(concurrentviewers): Represents the number of concurrent viewers. It can be replaced with the actual number of concurrent viewers.
+$(livechatid): Represents the ID of the live chat. It can be replaced with the actual live chat ID.
+$(livestreamid): Represents the ID of the live stream. It can be replaced with the actual live stream ID.
+$(title): Represents the title of the video. It can be replaced with the actual video title.
+$(description): Represents the description of the video. It can be replaced with the actual video description.
+$(channelid): Represents the ID of the YouTube channel. It can be replaced with the actual channel ID.
+$(publisheddate): Represents the published date of the video. It can be replaced with the actual published date.
+$(scheduledstarttime): Represents the scheduled start time of the video. It can be replaced with the actual scheduled start time.
+$(actualstarttime): Represents the actual start time of the video. It can be replaced with the actual actual start time.
+$(actualendtime): Represents the actual end time of the video. It can be replaced with the actual actual end time.
+$(totalviews): Represents the total number of views of the video. It can be replaced with the actual total number of views.
+$(likecount): Represents the number of likes on the video. It can be replaced with the actual number of likes.
+$(dislikecount): Represents the number of dislikes on the video. It can be replaced with the actual number of dislikes.
+$(commentcount): Represents the number of comments on the video. It can be replaced with the actual number of comments.
+$(favoritecount): Represents the number of times the video has been favorited. It can be replaced with the actual number of favorites.
+$(duration): Represents the duration of the video. It can be replaced with the actual video duration.
+For the "twitch" case:
+
+$(Followers): Represents the total number of followers for the Twitch channel. It can be replaced with the actual number of followers.
+$(Subscriptions): Represents the number of subscriptions for the Twitch channel. It can be replaced with the actual number of subscriptions.
+$(TotalViews): Represents the total number of video views for the Twitch channel. It can be replaced with the actual total number of views.
+$(User): Represents the channel's user or streamer. It can be replaced with the actual channel's user or streamer.
+$(Channel): Represents the name of the channel. It can be replaced with the actual channel's name.
+$(Title): Represents the title of the channel. It can be replaced with the actual channel's title.
+$(Channel.viewers): Represents the number of viewers in the channel. It can be replaced with a specific number.
+$(Sender): Represents the sender of a message. It can be replaced with the actual sender.
+$(Sender.Points): Represents the points of the sender. It can be replaced with the actual points of the sender.
+$(StreamUpTime): Represents the uptime or length of the stream. It can be replaced with the actual stream uptime.

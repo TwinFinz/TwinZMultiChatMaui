@@ -5,23 +5,23 @@ using Newtonsoft.Json;
 using TwitchLib.Client.Events;
 using System.Text;
 using System.IO;
-using Microsoft.Maui.Controls.Compatibility;
-using Microsoft.Maui.Controls.Hosting;
-using Microsoft.Maui.Controls.Platform.Compatibility;
 using Microsoft.Maui.Dispatching;
-using TwitchLib.Api.Helix.Models.Chat.Badges.GetChannelChatBadges;
-using TwitchLib.Api.Helix.Models.Chat.Emotes.GetChannelEmotes;
 using TwitchLib.Api.Helix;
 using CommunityToolkit.Maui;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
+using System.Web;
+using Newtonsoft.Json.Linq;
+using System.Globalization;
+using Discord;
+using GEmojiSharp;
 
 namespace TwinZMultiChat;
 
 public partial class MainPage : ContentPage
 {
-    #region Variables
-
-    //private const string BotUsername = "TwinZMultiChat";
-
+#region Variables
 #pragma warning disable CA1822 // Mark members as static (I don't want them static)
     public readonly static string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwinZMultiChat");
     private readonly static string DefaultColor = "rgb(100,255,255)";
@@ -31,16 +31,16 @@ public partial class MainPage : ContentPage
     private readonly static UiData UiDat = new();
     private static UiData StartingUiDat = new();
     private Dictionary<string, int> userStrikes = new();  // Tracks the number of strikes for each user
-    private HashSet<string> bannedUsers = new ();  // Tracks the banned users
+    private HashSet<string> bannedUsers = new();  // Tracks the banned users
     private const int MaxStrikes = 3;  // Maximum number of strikes before a user gets banned
 
 
     private static Utilities.MyDiscordAPI? discordBot;
     private static Utilities.MyTwitchAPI? twitchBot;
     private static Utilities.MyYoutubeAPI? youTubeBot;
-    #endregion Variables
+#endregion Variables
 
-    #region Init
+#region Init
     public MainPage()
     {
         InitializeComponent();
@@ -69,6 +69,11 @@ public partial class MainPage : ContentPage
             double centerY = (screenHeight - windowHeight) / 2;
             window.X = centerX;
             window.Y = centerY;
+        }
+        if (DeviceInfo.Platform == DevicePlatform.Android || DeviceInfo.Platform == DevicePlatform.iOS) // Disable Overlay Generation on Android
+        {
+            OverlayCheckBox.IsVisible = false;
+            OverlayLabel.IsVisible = false;
         }
     }
 
@@ -109,7 +114,7 @@ public partial class MainPage : ContentPage
 #if DEBUG
 #endif
         BindingContext = this;
-        
+
         try
         {
             string cfgInput = Preferences.Get("SavedUiData", string.Empty);
@@ -166,7 +171,7 @@ public partial class MainPage : ContentPage
         {
             await WriteToLog($"Failed to deserialize JSON: {ex.Message}");
         }
-        
+
     }
 #endregion
 
@@ -233,13 +238,35 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void DelBotCommand_Clicked(object sender, EventArgs e)
+    {
+        VisualStateManager.GoToState(DelCmdBtn, "Normal");
+        if (!string.IsNullOrWhiteSpace(botCommandBox.Text))
+        {
+            string command = botCommandBox.Text.Trim().ToLower();
+            if (!string.IsNullOrEmpty(command))
+            {
+                UiDat!.BotCommands.Remove(command);
+                // Clear the input fields
+                botCommandBox.Text = string.Empty;
+                botResponseBox.Text = string.Empty;
+                // Refresh the table view
+                RefreshTableView();
+            }
+        }
+        else
+        {
+            await MessageBoxWithOK("Failed!", "The command nor the response can be empty.");
+        }
+    }
+
     private async void OnStartBtn_Clicked(object sender, EventArgs e)
     {
         VisualStateManager.GoToState(StartBtn, "Normal");
         try
         {
-            StartingUiDat = new UiData() 
-            { 
+            StartingUiDat = new UiData()
+            {
                 EnableDiscord = UiDat.EnableDiscord,
                 EnableYouTube = UiDat.EnableYouTube,
                 EnableTwitch = UiDat.EnableTwitch,
@@ -267,7 +294,7 @@ public partial class MainPage : ContentPage
         VisualStateManager.GoToState(LicenseBtn, "Normal");
         try
         {
-            string LicenseText = "MIT License\r\n\r\nCommunityToolKit: Copyright (c) .NET Foundation and Contributors\r\nNewtonsoft.Json: Copyright (c) 2007 James Newton-King\r\nTwitchLib: Copyright (c) 2017 swiftyspiffy (Cole)\r\nDiscord.Net: Copyright (c) 2015-2022 Contributors\r\nTwinZMultiChat: Copyright (c) 2015-2022 Contributors\r\nAll Rights Reserved\r\n\r\nPermission is hereby granted, free of charge, to any person obtaining a copy\r\nof this software and associated documentation files (the \"Software\"), to deal\r\nin the Software without restriction, including without limitation the rights\r\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\r\ncopies of the Software, and to permit persons to whom the Software is\r\nfurnished to do so, subject to the following conditions:\r\n\r\nThe above copyright notice and this permission notice shall be included in all\r\ncopies or substantial portions of the Software.\r\n\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\r\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\r\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\r\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\r\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\r\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\r\nSOFTWARE.\r\n\r\n--------------------------------------------------------------------------------\r\nApache 2.0 License\r\n\r\nGoogle.Apis.YouTube.v3: Copyright (c) 2011-2015 Google Inc.\r\n\r\nLicensed under the Apache License, Version 2.0 (the \"License\");\r\nyou may not use this file except in compliance with the License.\r\nYou may obtain a copy of the License at\r\n\r\n    http://www.apache.org/licenses/LICENSE-2.0\r\n\r\nUnless required by applicable law or agreed to in writing, software\r\ndistributed under the License is distributed on an \"AS IS\" BASIS,\r\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\nSee the License for the specific language governing permissions and\r\nlimitations under the License.";
+            string LicenseText = "MIT License\r\n\r\nCommunityToolKit: Copyright (c) .NET Foundation and Contributors\r\nNewtonsoft.Json: Copyright (c) 2007 James Newton-King\r\nTwitchLib: Copyright (c) 2017 swiftyspiffy (Cole)\r\nDiscord.Net: Copyright (c) 2015-2022 Contributors\r\nGEmojiSharp: Copyright (c) 2019 Henrik Lau Eriksson\r\nTwinZMultiChat: Copyright (c) 2015-2022 Contributors\r\nAll Rights Reserved\r\n\r\nPermission is hereby granted, free of charge, to any person obtaining a copy\r\nof this software and associated documentation files (the \"Software\"), to deal\r\nin the Software without restriction, including without limitation the rights\r\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\r\ncopies of the Software, and to permit persons to whom the Software is\r\nfurnished to do so, subject to the following conditions:\r\n\r\nThe above copyright notice and this permission notice shall be included in all\r\ncopies or substantial portions of the Software.\r\n\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\r\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\r\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\r\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\r\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\r\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\r\nSOFTWARE.\r\n\r\n--------------------------------------------------------------------------------\r\nApache 2.0 License\r\n\r\nGoogle.Apis.YouTube.v3: Copyright (c) 2011-2015 Google Inc.\r\n\r\nLicensed under the Apache License, Version 2.0 (the \"License\");\r\nyou may not use this file except in compliance with the License.\r\nYou may obtain a copy of the License at\r\n\r\n    http://www.apache.org/licenses/LICENSE-2.0\r\n\r\nUnless required by applicable law or agreed to in writing, software\r\ndistributed under the License is distributed on an \"AS IS\" BASIS,\r\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\nSee the License for the specific language governing permissions and\r\nlimitations under the License.";
             await MessageBoxWithOK("License", LicenseText);
         }
         catch (Exception ex)
@@ -279,6 +306,42 @@ public partial class MainPage : ContentPage
     #endregion BtnClicks
 
     #region UI elements
+    private void CreateTransparentBrowser()
+    {
+        var webView = new WebView
+        {
+            Source = new UrlWebViewSource { Url = Path.Combine(UiDat.HtmlLocation, "ChatOverlay.html")},
+            BackgroundColor = Microsoft.Maui.Graphics.Color.FromRgba(255, 255, 255, 150),
+            Opacity = 0.6,
+            HeightRequest = 410,
+            WidthRequest = 640,
+            InputTransparent = true
+             
+        };
+        Grid contentGrid = new()
+        {
+            BackgroundColor = Microsoft.Maui.Graphics.Color.FromRgba(255, 255, 255, 150),
+            Children = { webView }
+        };
+        ContentPage contentPage = new() 
+        {
+            Content = contentGrid
+        };
+        Window secondWindow = new()
+        {
+            Page = contentPage,
+            Width = 640,  // Set the desired width for the window
+            Height = 410  // Set the desired height for the window
+        };
+        try
+        {
+            Application.Current!.OpenWindow(secondWindow);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
     private void DiscordBotTokenBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         UiDat.DiscordBotToken = e.NewTextValue ?? "";
@@ -436,21 +499,22 @@ public partial class MainPage : ContentPage
         return false;
     }
 
-    public async Task<bool> MessageBoxWithYesNo(string title, string promptMessage, string confirm = "Yes", string cancel = "No")
+    public async Task<string> MessageBoxWithYesNo(string title, string promptMessage, string confirm = "Yes", string cancel = "No")
     {
+        string result = string.Empty;
         if (Dispatcher.IsDispatchRequired)
         {
             // Move the UI-related code to the UI thread
             await Application.Current!.Dispatcher.DispatchAsync(() =>
             {
-                return true;
+                result = MessageBoxWithYesNo(title, promptMessage, confirm, cancel).Result;
             });
         }
         else
         {
-            await Application.Current!.MainPage!.DisplayPromptAsync(title, promptMessage, confirm, cancel);
+            result = await Application.Current!.MainPage!.DisplayPromptAsync(title, promptMessage, confirm, cancel);
         }
-        return false;
+        return result;
     }
 
     private static bool IsFolderWritable(string folderPath)
@@ -515,8 +579,16 @@ public partial class MainPage : ContentPage
         if (UiDat.EnableOverlay) // Connect Twitch
         {
             await WriteToLog("Enabled Overlay Generation.");
+            bool OpenTransparentWindow = false;
+#if DEBUG
+            OpenTransparentWindow = true;
+#endif
+            if (OpenTransparentWindow)
+            {
+                //CreateTransparentBrowser();
+            }
         }
-            if (UiDat.EnableTwitch) // Connect Twitch
+        if (UiDat.EnableTwitch) // Connect Twitch
         {
             twitchBot = new(this, UiDat.TwitchClientID, UiDat.TwitchClientSecret, UiDat!.TwitchChatID);
             await WriteToLog("Connecting to Twitch.");
@@ -540,8 +612,7 @@ public partial class MainPage : ContentPage
             if (DeviceInfo.Platform == DevicePlatform.Android)
             {
 #if DEBUG
-                await youTubeBot!.ConnectAsyncSecondary();
-                await this.MessageBoxWithOK("Warning!", $"This is currently broken on android. Sorry, Hope to get it fixed soon.", "OK");
+                await youTubeBot!.ConnectAsyncAndroid();
 #else
                 await this.MessageBoxWithOK("Warning!", $"This is currently broken on android. Sorry, Hope to get it fixed soon.", "OK");
 #endif
@@ -600,7 +671,7 @@ public partial class MainPage : ContentPage
         if (message.Content.StartsWith("!"))
         {
             string command = message.Content.ToLower();
-            await ProcessBotCommand("discord", command);
+            await ProcessBotCommand(msg.Platform, msg.Message.ToLower().Replace("!", ""), msg.User);
             return;
         }
         if (UiDat.EnableOverlay)
@@ -609,11 +680,11 @@ public partial class MainPage : ContentPage
         }
         if (UiDat.EnableYouTube)
         {
-            await youTubeBot!.SendLiveChatMessage($"{discordBot!.StreamMsgIntro}{message.Author.Username}: {message.Content}");
+            await youTubeBot!.SendLiveChatMessage($"{discordBot!.StreamMsgIntro}{msg.User}: {msg.Message}");
         }
         if (UiDat.EnableTwitch)
         {
-            await twitchBot!.SendMessage($"{discordBot!.StreamMsgIntro}{message.Author.Username}: {message.Content}");
+            await twitchBot!.SendMessage($"{discordBot!.StreamMsgIntro}{msg.User}: {msg.Message}");
         }
     }
 
@@ -630,7 +701,7 @@ public partial class MainPage : ContentPage
         if (YTMessage.Message.StartsWith("!"))
         {
             string command = YTMessage.Message.ToLower();
-            await ProcessBotCommand("youtube", command);
+            await ProcessBotCommand(msg.Platform, msg.Message.ToLower().Replace("!", ""), msg.User);
             return;
         }
         if (UiDat.EnableOverlay)
@@ -639,11 +710,11 @@ public partial class MainPage : ContentPage
         }
         if (UiDat.EnableDiscord)
         {
-            await discordBot!.SendMessageAsync(UiDat.DiscordChannelID, $"{discordBot!.StreamMsgIntro}{YTMessage.Username}: {YTMessage.Message}");
+            await discordBot!.SendMessageAsync(UiDat.DiscordChannelID, $"{discordBot!.StreamMsgIntro}{msg.User}: {msg.Message}");
         }
         if (UiDat.EnableTwitch)
         {
-            await twitchBot!.SendMessage($"{discordBot!.StreamMsgIntro}{YTMessage.Username}: {YTMessage.Message}");
+            await twitchBot!.SendMessage($"{discordBot!.StreamMsgIntro}{msg.User} :  {msg.Message}");
         }
     }
 
@@ -660,7 +731,7 @@ public partial class MainPage : ContentPage
         if (TwitchMsg.ChatMessage.Message.StartsWith("!"))
         {
             string command = TwitchMsg.ChatMessage.Message.ToLower();
-            await ProcessBotCommand("twitch", command.Replace("!", ""));
+            await ProcessBotCommand(msg.Platform, msg.Message.ToLower().Replace("!", ""), msg.User);
             return;
         }
         if (UiDat.EnableOverlay)
@@ -669,28 +740,56 @@ public partial class MainPage : ContentPage
         }
         if (UiDat.EnableDiscord)
         {
-            await discordBot!.SendMessageAsync(UiDat.DiscordChannelID, $"{discordBot!.StreamMsgIntro}{TwitchMsg.ChatMessage.Username}: {TwitchMsg.ChatMessage.Message}");
+            await discordBot!.SendMessageAsync(UiDat.DiscordChannelID, $"{discordBot!.StreamMsgIntro}{msg.User}: {msg.Message}");
         }
         if (UiDat.EnableYouTube)
         {
-            await youTubeBot!.SendLiveChatMessage($"{discordBot!.StreamMsgIntro}{TwitchMsg.ChatMessage.Username}: {TwitchMsg.ChatMessage.Message}");
+            await youTubeBot!.SendLiveChatMessage($"{discordBot!.StreamMsgIntro}{msg.User}: {msg.Message}");
         }
     }
 
-    // Function to process bot commands
-    public async Task ProcessBotCommand(string platform, string command)
+    public async Task ProcessBotCommand(string platform, string command, string username)
     {
-        command = command.Replace("!","").ToLower();
+        command = command.Replace("!", "").ToLower();
+
+        // Perform permission check based on the platform and username
+        if (!(await HasPermission(platform, username)))
+        {
+            await SendBotMessage(platform, "Insufficient permissions.");
+            return;
+        }
+
         if (UiDat.BotCommands.TryGetValue(command, out string? response) && response != null)
         {
             response = await ReplaceVariables(platform, response);
             await SendBotMessage(platform, response);
+            return;
         }
         else
         {
-            await SendBotMessage(platform, "Unknown command.");
+            //await SendBotMessage(platform, "Unknown command.");
+            return;
         }
     }
+
+    public async Task<bool> HasPermission(string platform, string username)
+    {
+        if (platform == "discord" && discordBot != null)
+        {
+            return await discordBot.IsUserAdmin(username);
+        }
+        if (platform == "youtube" && youTubeBot != null)
+        {
+            return await youTubeBot.IsUserAdmin(username);
+        }
+        if (platform == "twitch" && twitchBot != null)
+        {
+            return await twitchBot.IsUserAdmin(username);
+        }
+        return false;
+    }
+
+
 
     public async Task<string> ReplaceVariables(string platform, string text)
     {
@@ -698,44 +797,142 @@ public partial class MainPage : ContentPage
         switch (platform.ToLower())
         {
             case "discord":
-                //text = text.Replace("$(User)", ""); // Replace with user's display name
-                //text = text.Replace("$(User.Level)", "250");
-                //text = text.Replace("$(Title)", ""); // Replace with channel's title
-                //text = text.Replace("$(Channel)", ""); // Replace with channel's name
-                //text = text.Replace("$(Channel.Viewers)", "234");
+                if (text.Contains("$(user)"))
+                {
+                    //text = text.Replace("$(User)", ""); // Replace with user's display name
+                }
+                if (text.Contains("$(userlevel)"))
+                {
+                    //text = text.Replace("$(User.Level)", "250");
+                }
+                if (text.Contains("$(title)"))
+                {
+                    // text = text.Replace("$(Title)", ""); // Replace with channel's title
+                }
+                if (text.Contains("$(channel)"))
+                {
+                    //text = text.Replace("$(Channel)", ""); // Replace with channel's name
+                }
+                if (text.Contains("$(channelviewers)"))
+                {
+                    //text = text.Replace("$(Channel.Viewers)", "234");
+                }
                 break;
             case "youtube":
-                text = text.Replace("$(livestreamstatus)", await youTubeBot!.GetLiveStreamStatus());
-                text = text.Replace("$(concurrentviewers)", (await youTubeBot!.GetConcurrentViewers()).ToString());
-                text = text.Replace("$(livechatid)", await youTubeBot!.GetLiveChatId());
-                text = text.Replace("$(livestreamid)", await youTubeBot!.GetLiveStreamId());
-                text = text.Replace("$(title)", await youTubeBot!.GetTitle());
-                text = text.Replace("$(description)", await youTubeBot!.GetDescription());
-                text = text.Replace("$(channelid)", await youTubeBot!.GetChannelId());
-                text = text.Replace("$(channeltitle)", await youTubeBot!.GetChannelTitle());
-                text = text.Replace("$(publisheddate)", (await youTubeBot!.GetPublishedDate()).ToString());
-                text = text.Replace("$(scheduledstarttime)", (await youTubeBot!.GetScheduledStartTime()).ToString());
-                text = text.Replace("$(actualstarttime)", (await youTubeBot!.GetActualStartTime()).ToString());
-                text = text.Replace("$(actualendtime)", (await youTubeBot!.GetActualEndTime()).ToString());
-                //text = text.Replace("$(totalviews)", (await youTubeBot!.GetTotalViews()).ToString());
-                //text = text.Replace("$(likecount)", (await youTubeBot!.GetLikeCount()).ToString());
-                //text = text.Replace("$(dislikecount)", (await youTubeBot!.GetDislikeCount()).ToString());
-                //text = text.Replace("$(commentcount)", (await youTubeBot!.GetCommentCount()).ToString());
-                //text = text.Replace("$(favoritecount)", (await youTubeBot!.GetFavoriteCount()).ToString());
-                //text = text.Replace("$(duration)", await youTubeBot!.GetDuration());
+                if (text.Contains("$(livestreamstatus)"))
+                {
+                    text = text.Replace("$(livestreamstatus)", await youTubeBot!.GetLiveStreamStatus());
+                }
+                if (text.Contains("$(concurrentviewers)"))
+                {
+                    text = text.Replace("$(concurrentviewers)", (await youTubeBot!.GetConcurrentViewers()).ToString());
+                }
+                if (text.Contains("$(livechatid)"))
+                {
+                    text = text.Replace("$(livechatid)", await youTubeBot!.GetLiveChatId());
+                }
+                if (text.Contains("$(livestreamid)"))
+                {
+                    text = text.Replace("$(livestreamid)", await youTubeBot!.GetLiveStreamId());
+                }
+                if (text.Contains("$(title)"))
+                {
+                    text = text.Replace("$(title)", await youTubeBot!.GetTitle());
+                }
+                if (text.Contains("$(description)"))
+                {
+                    text = text.Replace("$(description)", await youTubeBot!.GetDescription());
+                }
+                if (text.Contains("$(channelid)"))
+                {
+                    text = text.Replace("$(channelid)", await youTubeBot!.GetChannelId());
+                }
+                if (text.Contains("$(publisheddate)"))
+                {
+                    text = text.Replace("$(publisheddate)", (await youTubeBot!.GetPublishedDate()).ToString());
+                }
+                if (text.Contains("$(scheduledstarttime)"))
+                {
+                    text = text.Replace("$(scheduledstarttime)", (await youTubeBot!.GetScheduledStartTime()).ToString());
+                }
+                if (text.Contains("$(actualstarttime)"))
+                {
+                    text = text.Replace("$(actualstarttime)", (await youTubeBot!.GetActualStartTime()).ToString());
+                }
+                if (text.Contains("$(actualendtime)"))
+                {
+                    text = text.Replace("$(actualendtime)", (await youTubeBot!.GetActualEndTime()).ToString());
+                }
+                if (text.Contains("$(totalviews)"))
+                {
+                    //text = text.Replace("$(totalviews)", (await youTubeBot!.GetTotalViews()).ToString());
+                }
+                if (text.Contains("$(likecount)"))
+                {
+                    //text = text.Replace("$(likecount)", (await youTubeBot!.GetLikeCount()).ToString());
+                }
+                if (text.Contains("$(dislikecount)"))
+                {
+                    //text = text.Replace("$(dislikecount)", (await youTubeBot!.GetDislikeCount()).ToString());
+                }
+                if (text.Contains("$(commentcount)"))
+                {
+                    //text = text.Replace("$(commentcount)", (await youTubeBot!.GetCommentCount()).ToString());
+                }
+                if (text.Contains("$(favoritecount)"))
+                {
+                    //text = text.Replace("$(favoritecount)", (await youTubeBot!.GetFavoriteCount()).ToString());
+                }
+                if (text.Contains("$(duration)"))
+                {
+                    //text = text.Replace("$(duration)", await youTubeBot!.GetDuration());
+                }
                 break;
             case "twitch":
-                string usrID = await twitchBot!.CurUserId();
-                text = text.Replace("$(Followers)", (await twitchBot!.GetTotalFollowers(usrID)).ToString());
-                text = text.Replace("$(Subscriptions)", (await twitchBot!.GetSubscriptions(usrID, new List<string>{ usrID }))!.Data.Length.ToString());
-                text = text.Replace("$(TotalViews)", (await twitchBot!.GetTotalVideoViews(usrID)).ToString());
-                text = text.Replace("$(User)", (await twitchBot!.GetChannelName(usrID)));
-                text = text.Replace("$(Channel)", (await twitchBot!.GetChannelName(usrID))); // Replace with channel's name
-                //text = text.Replace("$(Title)", ""); // Replace with channel's title
-                //text = text.Replace("$(Channel.viewers)", "");
-                //text = text.Replace("$(Sender)", ""); // Replace with sender
-                //text = text.Replace("$(Sender.Points)", "123"); // Replace with points
-                //text = text.Replace("$(StreamLength)", "LCS has been streaming for 15 minutes!");
+                if (twitchBot != null)
+                {
+                    string usrID = await twitchBot!.CurUserId();
+                    if (text.Contains("$(followers)"))
+                    {
+                        text = text.Replace("$(followers)", (await twitchBot!.GetTotalFollowers(usrID)).ToString());
+                    }
+                    if (text.Contains("$(subscriptions)"))
+                    {
+                        text = text.Replace("$(subscriptions)", (await twitchBot!.GetSubscriptions(usrID, (new List<string> { usrID })))?.Data.Length.ToString() ?? "0");
+                    }
+                    if (text.Contains("$(totalviews)"))
+                    {
+                        text = text.Replace("$(totalviews)", (await twitchBot!.GetTotalVideoViews(usrID)).ToString());
+                    }
+                    if (text.Contains("$(user)"))
+                    {
+                        text = text.Replace("$(user)", (await twitchBot!.GetChannelName(usrID)));
+                    }
+                    if (text.Contains("$(channel)"))
+                    {
+                        text = text.Replace("$(channel)", (await twitchBot!.GetChannelName(usrID)));
+                    }
+                    if (text.Contains("$(title)"))
+                    {
+                        text = text.Replace("$(title)", (await twitchBot!.GetStreamTitle(usrID)));
+                    }
+                    if (text.Contains("$(channelviewers)"))
+                    {
+                        //text = text.Replace("$(channelviewers)", "");
+                    }
+                    if (text.Contains("$(sender)"))
+                    {
+                        //text = text.Replace("$(sender)", "");
+                    }// Replace with sender
+                    if (text.Contains("$(sender.points)"))
+                    {
+                        text = text.Replace("$(sender.points)", (await twitchBot!.GetSenderBits(usrID)));
+                    }// Replace with points
+                    if (text.Contains("$(streamuptime)"))
+                    {
+                        text = text.Replace("$(streamuptime)", (await twitchBot!.GetStreamUptime(usrID)));
+                    }
+                }
                 break;
             case "kick":
                 break;
@@ -820,102 +1017,121 @@ public partial class MainPage : ContentPage
             // Platform not supported, handle it accordingly
         }
     }
-#endregion
+    #endregion
 
-#region OBS Overlay
+    #region OBS Overlay
+    private static readonly object _overlayLock = new();
     public static string GenerateChatOverlay(List<OverlayMsg> chatMessages, int refreshIntervalInSeconds)
     {
-        StringBuilder sb = new();
-        sb.AppendLine(@"<style>
-                    body {
-                        background-color: rgba(0, 0, 0, 0.85);
-                        color: white;
-                        font-family: Arial, sans-serif;
-                        font-size: 18px;
-                        width: 610px;
-                        height: 410px;
-                        opacity: 0.85;
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        overflow-y: auto;
-                        padding-right: 10px;
-                    }
-
-                    .chat-message {
-                        margin-bottom: 10px;
-                        background-color: #1a1a1a;
-                        padding: 5px; /* Adjust the padding value to make the border smaller */
-                border - radius: 5px;
-                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-                    }
-
-                    .chat-message-inner {
-                        display: flex;
-                        align-items: center;
-                        gap: 10px;
-                    }
-
-                    .chat-message-avatar {
-                        width: 45px;
-                        height: 45px;
-                        border-radius: 50%;
-                        overflow: hidden;
-                        flex-shrink: 0;
-                    }
-
-                    .chat-message-avatar img {
-                        width: 100%;
-                        height: 100%;
-                        object-fit: cover;
-                    }
-
-                    .chat-message-content {
-                        flex-grow: 1;
-                        word-wrap: break-word;
-                    }
-
-                    .user-color {
-                        color: inherit;
-                    }
-                </style>");
-
-        sb.AppendLine("<body>");
-        foreach (OverlayMsg messageEntry in chatMessages)
+        lock (_overlayLock)
         {
-            string platform = messageEntry.Platform;
-            string message = messageEntry.Message;
-            string user = messageEntry.User;
-            string userColor = messageEntry.UserColor;
-            string platformIconPath = GetPlatformIconPath(platform.ToLower());
 
-            sb.AppendLine($@"    <div class=""chat-message"">
-                    <div class=""chat-message-inner"">
-                        <div class=""chat-message-avatar"">
-                            <img src=""{platformIconPath}"" alt=""{platform}"" />
-                        </div>
-                        <div class=""chat-message-content""><span class=""user-color"" style=""color: {userColor}"">{user}</span>: {message}</div>
+            StringBuilder sb = new();
+            sb.AppendLine(@"<style>
+                body {
+                    background-color: rgba(0, 0, 0, 0.85);
+                    color: white;
+                    font-family: Arial, sans-serif;
+                    font-size: 18px;
+                    width: 610px;
+                    height: 410px;
+                    opacity: 0.85;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    overflow-y: auto;
+                    padding-right: 10px;
+                }
+
+                .chat-message {
+                    margin-bottom: 10px;
+                    background-color: #1a1a1a;
+                    padding: 5px; /* Adjust the padding value to make the border smaller */
+                    border-radius: 5px;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+                }
+
+                .chat-message-inner {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .chat-message-avatar {
+                    width: 45px;
+                    height: 45px;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    flex-shrink: 0;
+                }
+
+                .chat-message-avatar img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .chat-message-content {
+                    flex-grow: 1;
+                    word-wrap: break-word;
+                }
+                .emote {
+                    display: inline-block;
+                    width: 28px;
+                    height: 28px;
+                    background-repeat: no-repeat;
+                    background-size: contain;
+                }
+                .user-color {
+                    color: inherit;
+                }
+            </style>");
+
+            sb.AppendLine("<body>");
+            foreach (OverlayMsg messageEntry in chatMessages)
+            {
+                string platform = messageEntry.Platform;
+                string message = messageEntry.Message;
+                string user = messageEntry.User;
+                string userColor = messageEntry.UserColor;
+                string platformIconPath = GetPlatformIconPath(platform.ToLower());
+                if (UiDat.EnableTwitch && messageEntry.Platform == "twitch")
+                {
+                    message = twitchBot!.ReplaceTwitchEmotes(message).GetAwaiter().GetResult();
+                }
+                if (UiDat.EnableDiscord && messageEntry.Platform == "discord")
+                {
+                    message = discordBot!.ReplaceDiscordEmotes(message).GetAwaiter().GetResult();
+                }
+                message = GEmojiSharp.Emoji.Emojify(message);
+
+                sb.AppendLine($@"<div class=""chat-message"">
+                <div class=""chat-message-inner"">
+                    <div class=""chat-message-avatar"">
+                        <img src=""{platformIconPath}"" alt=""{platform}"" />
                     </div>
-                </div>");
-        }
+                    <div class=""chat-message-content""><span class=""user-color"" style=""color: {userColor}"">{user}</span>: <span>{message}</span></div>
+                </div>
+            </div>");
+            }
 
-        sb.AppendLine("</body>");
-        sb.AppendLine($@"<script>
-                setTimeout(function() {{
-                    location.reload();
-                }}, {refreshIntervalInSeconds * 1000});
-            </script>");
-        return sb.ToString();
+            sb.AppendLine("</body>");
+            sb.AppendLine($@"<script>
+            setTimeout(function() {{
+                location.reload();
+            }}, {refreshIntervalInSeconds * 1000});
+        </script>");
+            return sb.ToString();
+        }
     }
 
     private static string GetPlatformIconPath(string platform)
     {
-        // Modify this method to return the file path or URL of the corresponding platform icon
-        return platform switch
+        return platform.ToLower() switch
         {
-            "twitch" => Path.Combine(DataFolder, "twitch.png"),
-            "youtube" => Path.Combine(DataFolder, "youtube.png"),
-            "discord" => Path.Combine(DataFolder, "discord.png"),
+            "twitch" => Path.Combine("", "Twitch.png"),
+            "youtube" => Path.Combine("", "Youtube.png"),
+            "discord" => Path.Combine("", "Discord.png"),
             _ => string.Empty,// Return an empty string or default icon path if platform is not recognized
         };
     }
@@ -946,7 +1162,7 @@ public partial class MainPage : ContentPage
         [JsonProperty("message")]
         public string Message { get; set; } = string.Empty;
     }
-    #endregion
+#endregion
 }
 
 public class UiData // Data for Syncing with UI
@@ -983,8 +1199,6 @@ public class UiData // Data for Syncing with UI
     public string BotResponse { get; set; } = string.Empty;
     [JsonProperty("log_text")]
     public string LogText { get; set; } = string.Empty;
-
-
  
 }
 

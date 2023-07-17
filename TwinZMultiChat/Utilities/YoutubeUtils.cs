@@ -22,9 +22,18 @@ using TwitchLib.Client.Events;
 using TwitchLib.Api.Core.Exceptions;
 using TwitchLib.Communication.Interfaces;
 using System.Net.Http;
+using Google.Apis.Auth;
 using Microsoft.Maui;
 using Carbon.OAuth2;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Controls.PlatformConfiguration;
+using CommunityToolkit.Maui.Core.Primitives;
+using System.Xml;
+using Google.Apis.Util;
+
+#if ANDROID
+using Android.Content;
+#endif
 
 namespace TwinZMultiChat.Utilities
 {
@@ -36,6 +45,7 @@ namespace TwinZMultiChat.Utilities
         private static YouTubeService? _youtubeService;
         private static string applicationName = "";
         private static string streamMsgIntro = "";
+        //private static readonly string youTubeRedirectUri = "http://localhost:8080/redirect/";
         private static bool isChatMessageListenerActive = false;
         private static Task? _chatMessageListenerTask;
         private static LiveBroadcast? curBroadcast;
@@ -110,6 +120,10 @@ namespace TwinZMultiChat.Utilities
         {
             try
             {
+                if (!Directory.Exists(DataFolder))
+                {
+                    Directory.CreateDirectory(DataFolder);
+                }
                 string filePath = Path.Combine(DataFolder, "client_secret.json");
                 if (!File.Exists(filePath))
                 {
@@ -126,12 +140,13 @@ namespace TwinZMultiChat.Utilities
 
                     if (fileResult != null)
                     {
-                        // Handle the selected file
-                        // Rename the selected file to "client_secret.json"
                         string newFilePath = Path.Combine(DataFolder, "client_secret.json");
+                        if (File.Exists(newFilePath))
+                        {
+                            File.Delete(newFilePath);
+                        }
                         File.Copy(fileResult.FullPath, newFilePath);
-                        filePath = fileResult.FullPath;
-                        // Do something with the selected JSON file
+                        filePath = newFilePath;
                     }
                 }
 
@@ -165,73 +180,61 @@ namespace TwinZMultiChat.Utilities
             }
         } // does not work on android 
 
-       public async Task ConnectAsyncSecondary()
+        public async Task ConnectAsyncAndroid()
         {
-            try
+            if (DeviceInfo.Platform == DevicePlatform.Android)
             {
-                string filePath = Path.Combine(DataFolder, "client_secret.json");
-                string tokenPath = Path.Combine(DataFolder, "tokens.json");
-                if (!File.Exists(filePath))
+                try
                 {
-                    await UiForm!.MessageBoxWithOK("Warning!", "client_secret.json NOT found. Please select the file downloaded from console.google.com.", "OK");
-                    FileResult? fileResult = await FilePicker.PickAsync(new PickOptions
+                    if (!Directory.Exists(DataFolder))
                     {
-                        FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
-                        {
-                            { DevicePlatform.iOS, new[] { "public.json" } },
-                            { DevicePlatform.Android, new[] { "application/json" } },
-                            { DevicePlatform.WinUI, new[] { ".json" } }
-                        })
-                    });
-
-                    if (fileResult != null)
-                    {
-                        // Handle the selected file
-                        // Rename the selected file to "client_secret.json"
-                        string newFilePath = Path.Combine(DataFolder, "client_secret.json");
-                        File.Copy(fileResult.FullPath, newFilePath);
-                        filePath = fileResult.FullPath;
-                        // Do something with the selected JSON file
+                        Directory.CreateDirectory(DataFolder);
                     }
+                    string filePath = Path.Combine(DataFolder, "client_secret.json");
+                    if (!File.Exists(filePath))
+                    {
+                        await UiForm!.MessageBoxWithOK("Warning!", "client_secret.json NOT found. Please select the file downloaded from console.google.com.", "OK");
+                        FileResult? fileResult = await FilePicker.PickAsync(new PickOptions
+                        {
+                            FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+                            {
+                                { DevicePlatform.iOS, new[] { "public.json" } },
+                                { DevicePlatform.Android, new[] { "application/json" } },
+                                { DevicePlatform.WinUI, new[] { ".json" } }
+                            })
+                        });
+
+                        if (fileResult != null)
+                        {
+                            File.Copy(fileResult.FullPath, filePath);
+                        }
+                    }
+
+                    GoogleCredential credential;
+                    using (FileStream stream = new(filePath, FileMode.Open, FileAccess.Read)!)
+                    {
+                        credential = GoogleCredential.FromStream(stream)
+                            .CreateScoped(new[] { YouTubeService.Scope.Youtube });
+                    }
+
+                    BaseClientService.Initializer initializer = new()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
+                    };
+
+                    _youtubeService = new YouTubeService(initializer)!;
+                    curBroadcast = GetLiveBroadcast(_youtubeService!)!;
+
+                    _chatMessageListenerTask = Task.Run(StartChatMessageListener);
                 }
-                // ---------------------------------------------------------------------------------------------------------- //
-
-                GoogleClientSecrets clientSecrets;
-                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                catch (Exception ex)
                 {
-                    clientSecrets = GoogleClientSecrets.FromFile(filePath);
+                    await UiForm!.MessageBoxWithOK("Warning!", $"An error occurred while connecting: {ex.Message}", "OK");
+                    throw new Exception(ex.Message);
                 }
-                UserCredential credential; 
-                var authResult = await GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
-                {
-                    ClientId = clientSecrets.Secrets.ClientId,
-                    ClientSecret = clientSecrets.Secrets.ClientSecret
-                },
-                new[] { YouTubeService.Scope.Youtube },
-                applicationName,
-                CancellationToken.None,
-                new FileDataStore(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
-                credential = authResult;
-
-                BaseClientService.Initializer initializer = new()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
-                };
-
-
-                // ---------------------------------------------------------------------------------------------------------- //
-                _youtubeService = new YouTubeService(initializer)!;
-                curBroadcast = GetLiveBroadcast(_youtubeService!)!;
-
-                _chatMessageListenerTask = Task.Run(StartChatMessageListener);
             }
-            catch (Exception ex)
-            {
-                await UiForm!.MessageBoxWithOK("Warning!", $"An error occurred while connecting: {ex.Message}", "OK");
-                throw new Exception(ex.Message);
-            }
-        } // does not work on android 
+        } // Not Working on android
 
         public async Task ConnectAsyncCodeFlow()
         {
@@ -446,6 +449,18 @@ namespace TwinZMultiChat.Utilities
                 return await liveChatMessagesListRequest.ExecuteAsync();
         }
 
+        public Task<TimeSpan?> GetCurrentBroadcastLength()
+        {
+            if (_youtubeService == null || curBroadcast == null)
+            {
+                throw new InvalidOperationException("YouTube service or current broadcast is not available.");
+            }
+            DateTimeOffset? scheduledStartTime = curBroadcast.Snippet.ScheduledStartTimeDateTimeOffset;
+            DateTimeOffset? currentTime = DateTimeOffset.UtcNow;
+            TimeSpan? broadcastLength = (currentTime! - scheduledStartTime!);
+
+            return Task.FromResult(broadcastLength);
+        }
 
         public Task<string> GetLiveStreamStatus()
         {
@@ -516,16 +531,6 @@ namespace TwinZMultiChat.Utilities
 
             return Task.FromResult(string.Empty);
         }
-
-        public Task<string> GetChannelTitle()
-        {
-            if (curBroadcast != null)
-            {
-                //return Task.FromResult(curBroadcast.Snippet.);
-            }
-
-            return Task.FromResult(string.Empty);
-        } // Needs Fix
 
         public Task<DateTimeOffset> GetPublishedDate()
         {
@@ -617,22 +622,81 @@ namespace TwinZMultiChat.Utilities
                 return;
             }
 
-            LiveChatMessage liveChatMessage = new ()
-            {
-                Snippet = new LiveChatMessageSnippet
-                {
-                    LiveChatId = liveChatId,
-                    Type = "textMessageEvent",
-                    TextMessageDetails = new LiveChatTextMessageDetails
-                    {
-                        MessageText = messageText
-                    }
-                }
-            };           
+            int maxLength = 200;
+            List<string> messages = SplitMessage(messageText, maxLength);
 
-            LiveChatMessagesResource.InsertRequest insertRequest = _youtubeService!.LiveChatMessages.Insert(liveChatMessage, "snippet")!;
-            _ = await insertRequest.ExecuteAsync()!;
+            foreach (string message in messages)
+            {
+                LiveChatMessage liveChatMessage = new()
+                {
+                    Snippet = new LiveChatMessageSnippet
+                    {
+                        LiveChatId = liveChatId,
+                        Type = "textMessageEvent",
+                        TextMessageDetails = new LiveChatTextMessageDetails
+                        {
+                            MessageText = message
+                        }
+                    }
+                };
+
+                LiveChatMessagesResource.InsertRequest insertRequest = _youtubeService!.LiveChatMessages.Insert(liveChatMessage, "snippet")!;
+                _ = await insertRequest.ExecuteAsync()!;
+            }
         }
+
+        private List<string> SplitMessage(string message, int maxLength)
+        {
+            List<string> messages = new();
+
+            if (message.Length <= maxLength)
+            {
+                messages.Add(message);
+            }
+            else
+            {
+                int index = 0;
+                while (index < message.Length)
+                {
+                    int length = Math.Min(maxLength, message.Length - index);
+
+                    // Find the nearest space to split the message
+                    int spaceIndex = message.LastIndexOf(' ', index + length - 1);
+                    if (spaceIndex > index)
+                    {
+                        // Include the space in the current message
+                        length = spaceIndex - index + 1;
+                    }
+
+                    string subMessage = message.Substring(index, length);
+                    messages.Add(subMessage);
+                    index += length;
+                }
+            }
+
+            return messages;
+        }
+
+        public Task<bool> IsUserAdmin(string userId)
+        {
+            if (_youtubeService == null)
+            {
+                throw new InvalidOperationException("YouTube service is not initialized.");
+            }
+            var moderatorsRequest = _youtubeService.LiveChatModerators.List(curBroadcast!.Snippet.ChannelId, "snippet");
+            var moderatorsResponse = moderatorsRequest.Execute();
+
+            var moderators = moderatorsResponse.Items;
+
+            foreach (var moderator in moderators)
+            {
+                if (moderator.Snippet?.ModeratorDetails?.DisplayName == userId)
+                {
+                    return Task.FromResult(true);
+                }
+            }
+            return Task.FromResult(false);
+        } // Needs Testing
 
         static LiveBroadcast GetLiveBroadcast(YouTubeService youtubeService)
         {
