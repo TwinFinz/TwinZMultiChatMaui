@@ -45,13 +45,19 @@ The overlay will be saved to whatever location you set apon activation(Remember 
 There is a known issue where the log window does not auto scroll on Windows. I am not sure why it won't but am looking to fix it.
 
 
-
-Hope this is helpful to someone. We are currently waiting for validation from the windows store and a link will be posted soon. :)
-
-
-
 Android Users:
 
 The Youtube Authorization is currently broken and will be fixed shortly, all other services still function correctly. (landscape mode not locked but prefered)
 
 i am currently waiting on google Validation and a link will be available shortly. :)
+
+
+
+Hope this is helpful to someone. We are currently waiting for validation from the windows store and a link will be posted soon. :)
+
+Social Links: [Patreon](https://www.patreon.com/TwinFinZ)    [YouTube](https://www.youtube.com/@TwinFinZ)    [Twitch](https://www.twitch.tv/twinfinz_)    [Kick](https://kick.com/twinfinz)
+
+
+
+
+
