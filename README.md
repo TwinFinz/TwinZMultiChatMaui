@@ -53,7 +53,9 @@ i am currently waiting on google Validation and a link will be available shortly
 
 
 
-Hope this is helpful to someone. We are currently waiting for validation from the windows store and a link will be posted soon. :)
+Hope this is helpful to someone. :)
+
+Windows Store: [TwinZMultiChat](https://apps.microsoft.com/store/detail/twinzmulichat/9NQN85NJMZKV?hl=en-us&gl=us)
 
 Social Links: [Patreon](https://www.patreon.com/TwinFinZ)    [YouTube](https://www.youtube.com/@TwinFinZ)    [Twitch](https://www.twitch.tv/twinfinz_)    [Kick](https://kick.com/twinfinz)
 
