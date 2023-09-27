@@ -1,4 +1,4 @@
-# TwinZMultiChatMaui - Multi-Platform Multi-Stream chatbot/sync utility. (just because i can)
+# TwinZMultiChatMaui - Multi-Platform Multi-Stream chatbot/sync utility.
 TwinZMultiChat But even better, updated UI and bunches of bug fixes
 
 
