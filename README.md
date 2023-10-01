@@ -57,7 +57,6 @@ Hope this is helpful to someone. :)
 
 Windows Store: [TwinZMultiChat](https://apps.microsoft.com/store/detail/twinzmulichat/9NQN85NJMZKV?hl=en-us&gl=us)
 
-Social Links: [Patreon](https://www.patreon.com/TwinFinZ)    [YouTube](https://www.youtube.com/@TwinFinZ)    [Twitch](https://www.twitch.tv/twinfinz_)    [Kick](https://kick.com/twinfinz)
 
 
 
